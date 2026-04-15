@@ -326,8 +326,12 @@ async function handleStart(env, chatId) {
 	});
 }
 
-async function handleQuery(env, chatId) {
-	await sendModeButtons(env, chatId);
+async function handleQuery(env, chatId, chat, ctx, requestMessageId) {
+	const sent = await sendModeButtons(env, chatId);
+	if (isGroupChat(chat)) {
+		scheduleDeleteMessage(env, ctx, chatId, requestMessageId, 30000);
+		scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 30000);
+	}
 }
 
 async function handleCallback(env, callbackQuery) {
@@ -421,7 +425,7 @@ async function handleMessage(env, message, ctx) {
 		return;
 	}
 	if (isQueryCmd) {
-		await handleQuery(env, chatId);
+		await handleQuery(env, chatId, chat, ctx, message?.message_id);
 		return;
 	}
 

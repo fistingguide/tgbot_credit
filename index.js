@@ -73,12 +73,13 @@ function isGroupChat(chat) {
 
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
-	const isCreditCmd = normalizeCommand(text) === "/mytgcredit";
+	const cmd = normalizeCommand(text);
+	const isCreditCmd = cmd === "/mytgcredit" || cmd === "/alltgcredit";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
-	const listStar = msgCount + photoCount * 3 + videoCount * 9;
-	return { msgCount, photoCount, videoCount, listStar };
+	const star = msgCount + photoCount * 3 + videoCount * 9;
+	return { msgCount, photoCount, videoCount, star };
 }
 
 async function tg(env, method, payload) {
@@ -172,10 +173,11 @@ async function ensureCreditSchema(env) {
 		`CREATE TABLE IF NOT EXISTS ${table} (` +
 			"user_id TEXT NOT NULL PRIMARY KEY," +
 			"user_handle TEXT," +
+			"x_handle TEXT," +
 			"msg_count INTEGER NOT NULL DEFAULT 0," +
 			"photo_count INTEGER NOT NULL DEFAULT 0," +
 			"video_count INTEGER NOT NULL DEFAULT 0," +
-			"list_star INTEGER NOT NULL DEFAULT 0," +
+			"star INTEGER NOT NULL DEFAULT 0," +
 			"updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP" +
 			")"
 	).run();
@@ -189,8 +191,11 @@ async function ensureCreditSchema(env) {
 	if (!existingColumns.has("user_handle")) {
 		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN user_handle TEXT`).run();
 	}
-	if (!existingColumns.has("list_star")) {
-		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN list_star INTEGER NOT NULL DEFAULT 0`).run();
+	if (!existingColumns.has("x_handle")) {
+		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN x_handle TEXT`).run();
+	}
+	if (!existingColumns.has("star")) {
+		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN star INTEGER NOT NULL DEFAULT 0`).run();
 	}
 
 	if (hasUsername) {
@@ -200,10 +205,17 @@ async function ensureCreditSchema(env) {
 		).run();
 	}
 
-	await env.DB.prepare(
-		`UPDATE ${table} SET list_star = COALESCE(msg_count, 0) + COALESCE(photo_count, 0) * 3 + COALESCE(video_count, 0) * 9 ` +
-			"WHERE COALESCE(list_star, 0) = 0"
-	).run();
+	if (existingColumns.has("list_star")) {
+		await env.DB.prepare(
+			`UPDATE ${table} SET star = COALESCE(list_star, COALESCE(msg_count, 0) + COALESCE(photo_count, 0) * 3 + COALESCE(video_count, 0) * 9) ` +
+				"WHERE COALESCE(star, 0) = 0"
+		).run();
+	} else {
+		await env.DB.prepare(
+			`UPDATE ${table} SET star = COALESCE(msg_count, 0) + COALESCE(photo_count, 0) * 3 + COALESCE(video_count, 0) * 9 ` +
+				"WHERE COALESCE(star, 0) = 0"
+		).run();
+	}
 
 	await env.DB.prepare(
 		`UPDATE ${table} ` +
@@ -213,12 +225,13 @@ async function ensureCreditSchema(env) {
 			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
 			"video_count = (SELECT SUM(COALESCE(t2.video_count, 0)) FROM " +
 			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-			"list_star = (SELECT SUM(COALESCE(t2.list_star, 0)) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+			`star = (SELECT SUM(COALESCE(${existingColumns.has("list_star") ? "t2.star, t2.list_star" : "t2.star"}, 0)) FROM ${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
 			"updated_at = (SELECT MAX(t2.updated_at) FROM " +
 			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
 			"user_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.user_handle, '')), '')) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), user_handle)`
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), user_handle), ` +
+			"x_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.x_handle, '')), '')) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), x_handle)`
 	).run();
 
 	await env.DB.prepare(
@@ -230,7 +243,7 @@ async function ensureCreditSchema(env) {
 	await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_user_id ON ${table}(user_id)`).run();
 
 	// Try to drop legacy columns in place when the runtime supports it.
-	for (const legacyColumn of ["chat_id", "first_name", "last_name", "username"]) {
+	for (const legacyColumn of ["chat_id", "first_name", "last_name", "username", "list_star"]) {
 		if (existingColumns.has(legacyColumn)) {
 			try {
 				await env.DB.prepare(`ALTER TABLE ${table} DROP COLUMN ${legacyColumn}`).run();
@@ -241,34 +254,57 @@ async function ensureCreditSchema(env) {
 	}
 }
 
+async function resolveXHandle(env, userHandle) {
+	const normalized = normalizeInput(userHandle).toLowerCase();
+	if (!normalized) return "";
+	try {
+		const profilesTable = getProfilesTable(env);
+		const result = await env.DB.prepare(
+			`SELECT handle FROM ${profilesTable} ` +
+				"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? " +
+				"LIMIT 1"
+		)
+			.bind(normalized)
+			.first();
+		return String(result?.handle || "").trim();
+	} catch (err) {
+		console.error("resolveXHandle failed:", err);
+		return "";
+	}
+}
+
 async function upsertCredit(env, message) {
 	const from = message?.from;
 	if (!from?.id || from?.is_bot) return;
 
-	const { msgCount, photoCount, videoCount, listStar } = buildIncrements(message);
-	if (msgCount === 0 && photoCount === 0 && videoCount === 0 && listStar === 0) return;
+	const { msgCount, photoCount, videoCount, star } = buildIncrements(message);
+	if (msgCount === 0 && photoCount === 0 && videoCount === 0 && star === 0) return;
+	const userHandle = String(from.username || "").trim();
+	const xHandle = await resolveXHandle(env, userHandle);
 
 	const table = getCreditTable(env);
 	const sql =
 		`INSERT INTO ${table} ` +
-		"(user_id, user_handle, msg_count, photo_count, video_count, list_star, updated_at) " +
-		"VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
+		"(user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at) " +
+		"VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
 		"ON CONFLICT(user_id) DO UPDATE SET " +
 		"user_handle = excluded.user_handle, " +
+		"x_handle = CASE WHEN TRIM(COALESCE(excluded.x_handle, '')) <> '' THEN excluded.x_handle ELSE x_handle END, " +
 		"msg_count = msg_count + excluded.msg_count, " +
 		"photo_count = photo_count + excluded.photo_count, " +
 		"video_count = video_count + excluded.video_count, " +
-		"list_star = list_star + excluded.list_star, " +
+		"star = star + excluded.star, " +
 		"updated_at = CURRENT_TIMESTAMP";
 
 	await env.DB.prepare(sql)
 		.bind(
 			String(from.id),
-			String(from.username || "").trim(),
+			userHandle,
+			xHandle,
 			msgCount,
 			photoCount,
 			videoCount,
-			listStar
+			star
 		)
 		.run();
 }
@@ -291,9 +327,10 @@ function formatCredit(rows) {
 		const msg = Number(row?.msg_count || 0);
 		const photo = Number(row?.photo_count || 0);
 		const video = Number(row?.video_count || 0);
-		const total = Number(row?.list_star || 0);
+		const xHandle = escapeHtml(String(row?.x_handle || "").trim());
+		const total = Number(row?.star || 0);
 		lines.push(`${i + 1}. 👤 <b>${name}</b>`);
-		lines.push(`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>`);
+		lines.push(`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>${xHandle ? `   𝕏<b>@${xHandle}</b>` : ""}`);
 		if (i !== rows.length - 1) {
 			lines.push("┈┈┈┈┈┈┈┈┈┈");
 		}
@@ -302,11 +339,30 @@ function formatCredit(rows) {
 	return lines.join("\n");
 }
 
-async function sendCredit(env, chatId) {
+function formatMyCredit(row) {
+	if (!row) {
+		return "No credit record found for you yet.";
+	}
+	const name = escapeHtml(displayName(row));
+	const xHandle = escapeHtml(String(row?.x_handle || "").trim());
+	const msg = Number(row?.msg_count || 0);
+	const photo = Number(row?.photo_count || 0);
+	const video = Number(row?.video_count || 0);
+	const total = Number(row?.star || 0);
+	return [
+		"<b>⭐ My Credit</b>",
+		"━━━━━━━━━━━━",
+		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>@${xHandle}</b>` : ""}`,
+		`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>`,
+		"━━━━━━━━━━━━",
+	].join("\n");
+}
+
+async function sendAllCredit(env, chatId) {
 	const table = getCreditTable(env);
 	const sql =
-		`SELECT user_id, user_handle, msg_count, photo_count, video_count, list_star, updated_at FROM ${table} ` +
-		"ORDER BY list_star DESC, updated_at DESC " +
+		`SELECT user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at FROM ${table} ` +
+		"ORDER BY star DESC, updated_at DESC " +
 		"LIMIT 50";
 	const result = await env.DB.prepare(sql).all();
 	const rows = Array.isArray(result?.results) ? result.results : [];
@@ -314,6 +370,20 @@ async function sendCredit(env, chatId) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: formatCredit(rows),
+		parse_mode: "HTML",
+	});
+}
+
+async function sendMyCredit(env, chatId, userId) {
+	const table = getCreditTable(env);
+	const row = await env.DB.prepare(
+		`SELECT user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at FROM ${table} WHERE user_id = ? LIMIT 1`
+	)
+		.bind(String(userId))
+		.first();
+	return tg(env, "sendMessage", {
+		chat_id: chatId,
+		text: formatMyCredit(row),
 		parse_mode: "HTML",
 	});
 }
@@ -457,15 +527,23 @@ async function handleMessage(env, message, ctx) {
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
 	const isMyprofileCmd = command === "/myprofile" || command.startsWith("/myprofile@");
 	const isMytgcreditCmd = command === "/mytgcredit" || command.startsWith("/mytgcredit@");
+	const isAlltgcreditCmd = command === "/alltgcredit" || command.startsWith("/alltgcredit@");
 
 	if (isMytgcreditCmd) {
-		if (!isGroupChat(chat)) {
-			await tg(env, "sendMessage", { chat_id: chatId, text: "Use /mytgcredit inside a group chat." });
-			return;
+		const sent = await sendMyCredit(env, chatId, message?.from?.id);
+		if (isGroupChat(chat)) {
+			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
 		}
-		const sent = await sendCredit(env, chatId);
-		scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
-		scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+		return;
+	}
+
+	if (isAlltgcreditCmd) {
+		const sent = await sendAllCredit(env, chatId);
+		if (isGroupChat(chat)) {
+			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+		}
 		return;
 	}
 

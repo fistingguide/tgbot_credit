@@ -105,6 +105,15 @@ function extractModeFromReply(message) {
 	return match ? match[1].toLowerCase() : "";
 }
 
+function parseModeCommand(text) {
+	const m = String(text || "").trim().match(/^\/(x|tg)(?:@\S+)?(?:\s+(.+))?$/i);
+	if (!m) return null;
+	return {
+		mode: m[1].toLowerCase(),
+		value: String(m[2] || "").trim(),
+	};
+}
+
 async function queryProfilesByX(env, input) {
 	const handle = normalizeInput(input).toLowerCase();
 	if (!handle) return [];
@@ -188,6 +197,40 @@ async function handleMessage(env, message) {
 	const text = String(message?.text || "").trim();
 	if (!chatId || !text) return;
 
+	const modeCommand = parseModeCommand(text);
+	if (modeCommand) {
+		const input = modeCommand.value;
+		if (!input) {
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: modeCommand.mode === "x" ? "用法：/x 账号" : "用法：/tg 账号",
+			});
+			return;
+		}
+		try {
+			const rows =
+				modeCommand.mode === "x" ? await queryProfilesByX(env, input) : await queryProfilesByTelegram(env, input);
+			if (rows.length === 0) {
+				await tg(env, "sendMessage", { chat_id: chatId, text: "没有找到对应账号。" });
+				return;
+			}
+			if (rows.length > 1) {
+				await tg(env, "sendMessage", { chat_id: chatId, text: "匹配到多个账号，请输入更精确的账号。" });
+				return;
+			}
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: formatRow(rows[0]),
+				parse_mode: "HTML",
+				disable_web_page_preview: true,
+			});
+		} catch (err) {
+			console.error(err);
+			await tg(env, "sendMessage", { chat_id: chatId, text: "查询失败，请稍后重试。" });
+		}
+		return;
+	}
+
 	const command = text.split(/\s+/)[0].toLowerCase();
 	const isStartCmd = command === "/start" || command.startsWith("/start@");
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
@@ -204,9 +247,35 @@ async function handleMessage(env, message) {
 
 	const mode = extractModeFromReply(message);
 	if (!mode) {
+		// Fallback when Telegram client didn't include reply_to_message:
+		// try both X and Telegram exact-match paths.
+		try {
+			const byX = await queryProfilesByX(env, text);
+			if (byX.length === 1) {
+				await tg(env, "sendMessage", {
+					chat_id: chatId,
+					text: formatRow(byX[0]),
+					parse_mode: "HTML",
+					disable_web_page_preview: true,
+				});
+				return;
+			}
+			const byTg = await queryProfilesByTelegram(env, text);
+			if (byTg.length === 1) {
+				await tg(env, "sendMessage", {
+					chat_id: chatId,
+					text: formatRow(byTg[0]),
+					parse_mode: "HTML",
+					disable_web_page_preview: true,
+				});
+				return;
+			}
+		} catch (err) {
+			console.error(err);
+		}
 		await tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: "请先发送 /query，选择查询方式后在输入框回复账号。",
+			text: "请先发送 /query 选择查询方式，或直接用 /x 账号、/tg 账号 查询。",
 		});
 		return;
 	}

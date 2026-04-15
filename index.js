@@ -167,6 +167,31 @@ function parseModeCommand(text) {
 	};
 }
 
+async function ensureProfilesSchema(env) {
+	const table = getProfilesTable(env);
+	const columnsResult = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
+	const existingColumns = new Set(
+		(Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || ""))
+	);
+	if (existingColumns.size === 0) {
+		console.warn(`profiles table not found or unreadable: ${table}`);
+		return;
+	}
+
+	const addColumnIfMissing = async (name, ddl) => {
+		if (!existingColumns.has(name)) {
+			await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN ${ddl}`).run();
+		}
+	};
+
+	await addColumnIfMissing("tg_user_id", "tg_user_id TEXT");
+	await addColumnIfMissing("tg_msg_cnt", "tg_msg_cnt INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("tg_photo_cnt", "tg_photo_cnt INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("tg_video_cnt", "tg_video_cnt INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("list_star_event_cnt", "list_star_event_cnt INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("total_credit", "total_credit INTEGER NOT NULL DEFAULT 0");
+}
+
 async function ensureCreditSchema(env) {
 	const table = getCreditTable(env);
 	await env.DB.prepare(
@@ -638,6 +663,7 @@ export default {
 			getProfilesTable(env);
 			getCreditTable(env);
 			await env.DB.prepare("SELECT 1").first();
+			await ensureProfilesSchema(env);
 			await ensureCreditSchema(env);
 		} catch (err) {
 			console.error(err);

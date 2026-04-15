@@ -96,6 +96,12 @@ async function ensureSchema(env) {
 		(Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || ""))
 	);
 	const hasUsername = existingColumns.has("username");
+	const hasLegacyColumns =
+		existingColumns.has("chat_id") ||
+		existingColumns.has("first_name") ||
+		existingColumns.has("last_name") ||
+		existingColumns.has("username") ||
+		existingColumns.has("list_star");
 
 	if (!existingColumns.has("user_handle")) {
 		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN user_handle TEXT`).run();
@@ -126,30 +132,40 @@ async function ensureSchema(env) {
 		).run();
 	}
 
-	await env.DB.prepare(
-		`UPDATE ${table} ` +
-			"SET msg_count = (SELECT SUM(COALESCE(t2.msg_count, 0)) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-			"photo_count = (SELECT SUM(COALESCE(t2.photo_count, 0)) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-			"video_count = (SELECT SUM(COALESCE(t2.video_count, 0)) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-			`star = (SELECT SUM(COALESCE(${existingColumns.has("list_star") ? "t2.star, t2.list_star" : "t2.star"}, 0)) FROM ${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-			"updated_at = (SELECT MAX(t2.updated_at) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-			"user_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.user_handle, '')), '')) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), user_handle), ` +
-			"x_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.x_handle, '')), '')) FROM " +
-			`${table} t2 WHERE t2.user_id = ${table}.user_id), x_handle)`
-	).run();
+	const indexRows = await env.DB.prepare(`PRAGMA index_list(${table})`).all();
+	const hasUserIdUniqueIndex = (Array.isArray(indexRows?.results) ? indexRows.results : []).some((row) => {
+		const idxName = String(row?.name || "");
+		return idxName === `idx_${table}_user_id`;
+	});
 
-	await env.DB.prepare(
-		`DELETE FROM ${table} WHERE rowid NOT IN (` +
-			`SELECT MIN(rowid) FROM ${table} GROUP BY user_id` +
-			")"
-	).run();
+	if (!hasUserIdUniqueIndex) {
+		if (hasLegacyColumns) {
+			await env.DB.prepare(
+				`UPDATE ${table} ` +
+					"SET msg_count = (SELECT SUM(COALESCE(t2.msg_count, 0)) FROM " +
+					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+					"photo_count = (SELECT SUM(COALESCE(t2.photo_count, 0)) FROM " +
+					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+					"video_count = (SELECT SUM(COALESCE(t2.video_count, 0)) FROM " +
+					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+					`star = (SELECT SUM(COALESCE(${existingColumns.has("list_star") ? "t2.star, t2.list_star" : "t2.star"}, 0)) FROM ${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+					"updated_at = (SELECT MAX(t2.updated_at) FROM " +
+					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+					"user_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.user_handle, '')), '')) FROM " +
+					`${table} t2 WHERE t2.user_id = ${table}.user_id), user_handle), ` +
+					"x_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.x_handle, '')), '')) FROM " +
+					`${table} t2 WHERE t2.user_id = ${table}.user_id), x_handle)`
+			).run();
 
-	await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_user_id ON ${table}(user_id)`).run();
+			await env.DB.prepare(
+				`DELETE FROM ${table} WHERE rowid NOT IN (` +
+					`SELECT MIN(rowid) FROM ${table} GROUP BY user_id` +
+					")"
+			).run();
+		}
+
+		await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_user_id ON ${table}(user_id)`).run();
+	}
 
 	for (const legacyColumn of ["chat_id", "first_name", "last_name", "username", "list_star"]) {
 		if (existingColumns.has(legacyColumn)) {

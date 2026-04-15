@@ -217,13 +217,15 @@ function formatCredit(rows) {
 	for (let i = 0; i < rows.length; i += 1) {
 		const row = rows[i];
 		const name = escapeHtml(displayName(row));
-		const username = escapeHtml(String(row?.username || ""));
 		const msg = Number(row?.msg_count || 0);
 		const photo = Number(row?.photo_count || 0);
 		const video = Number(row?.video_count || 0);
 		const total = msg + photo * 3 + video * 9;
-		lines.push(`${i + 1}. 👤 <b>${name}</b>${username ? ` (@${username})` : ""}`);
-		lines.push(`💬: <b>${msg}</b>   🖼️: <b>${photo}</b>   🎬: <b>${video}</b>   ⭐: <b>${total}</b>`);
+		lines.push(`${i + 1}. 👤 <b>${name}</b>`);
+		lines.push(`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>`);
+		if (i !== rows.length - 1) {
+			lines.push("┈┈┈┈┈┈┈┈┈┈");
+		}
 	}
 	lines.push("━━━━━━━━━━━━");
 	return lines.join("\n");

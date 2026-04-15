@@ -69,12 +69,12 @@ async function tg(env, method, payload) {
 async function sendModeButtons(env, chatId) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "请选择查询方式：",
+		text: "Choose a query method:",
 		reply_markup: {
 			inline_keyboard: [
 				[
-					{ text: "根据 X 查询", callback_data: "mode_x" },
-					{ text: "根据 Telegram 查询", callback_data: "mode_tg" },
+					{ text: "Search by X", callback_data: "mode_x" },
+					{ text: "Search by Telegram", callback_data: "mode_tg" },
 				],
 			],
 		},
@@ -83,9 +83,9 @@ async function sendModeButtons(env, chatId) {
 
 function buildPrompt(mode) {
 	if (mode === "x") {
-		return "[QUERY_MODE:x] 请输入 X 账号（例如 @demo 或 demo）";
+		return "[QUERY_MODE:x] Enter an X handle (e.g. @demo or demo)";
 	}
-	return "[QUERY_MODE:tg] 请输入 Telegram 账号（例如 @demo 或 demo）";
+	return "[QUERY_MODE:tg] Enter a Telegram username (e.g. @demo or demo)";
 }
 
 async function askForInput(env, chatId, mode) {
@@ -94,7 +94,7 @@ async function askForInput(env, chatId, mode) {
 		text: buildPrompt(mode),
 		reply_markup: {
 			force_reply: true,
-			input_field_placeholder: mode === "x" ? "输入 X 账号" : "输入 Telegram 账号",
+			input_field_placeholder: mode === "x" ? "Type X handle" : "Type Telegram username",
 		},
 	});
 }
@@ -151,12 +151,15 @@ function formatRow(row) {
 	const profileUrl = escapeHtml(row?.profile_url || "");
 
 	const lines = [
-		`<b>${name}</b>`,
-		handle ? `X: ${handle}` : "",
-		telegram ? `Telegram: @${telegram}` : "Telegram: (empty)",
-		`Location: ${district} / ${region} / ${country}`,
-		profileUrl ? `Profile: ${profileUrl}` : "",
-		bio ? `Bio: ${bio}` : "",
+		"<b>🔎 Profile Result</b>",
+		"━━━━━━━━━━━━",
+		`👤 <b>${name}</b>`,
+		handle ? `𝕏 <b>X</b>: @${handle}` : "𝕏 <b>X</b>: (empty)",
+		telegram ? `💬 <b>Telegram</b>: @${telegram}` : "💬 <b>Telegram</b>: (empty)",
+		`📍 <b>Location</b>: ${district} / ${region} / ${country}`,
+		profileUrl ? `🔗 <b>Profile</b>: ${profileUrl}` : "",
+		bio ? `📝 <b>Bio</b>: ${bio}` : "",
+		"━━━━━━━━━━━━",
 	].filter(Boolean);
 	return lines.join("\n");
 }
@@ -164,7 +167,7 @@ function formatRow(row) {
 async function handleStart(env, chatId) {
 	await tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "发送 /query 开始查询。",
+		text: "Send /query to start searching.",
 	});
 }
 
@@ -178,13 +181,13 @@ async function handleCallback(env, callbackQuery) {
 	if (!chatId) return;
 
 	if (data === "mode_x") {
-		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 X 查询" });
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "Switched to X search" });
 		await askForInput(env, chatId, "x");
 		return;
 	}
 
 	if (data === "mode_tg") {
-		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 Telegram 查询" });
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "Switched to Telegram search" });
 		await askForInput(env, chatId, "tg");
 		return;
 	}
@@ -203,7 +206,7 @@ async function handleMessage(env, message) {
 		if (!input) {
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: modeCommand.mode === "x" ? "用法：/x 账号" : "用法：/tg 账号",
+				text: modeCommand.mode === "x" ? "Usage: /x <handle>" : "Usage: /tg <username>",
 			});
 			return;
 		}
@@ -211,11 +214,11 @@ async function handleMessage(env, message) {
 			const rows =
 				modeCommand.mode === "x" ? await queryProfilesByX(env, input) : await queryProfilesByTelegram(env, input);
 			if (rows.length === 0) {
-				await tg(env, "sendMessage", { chat_id: chatId, text: "没有找到对应账号。" });
+				await tg(env, "sendMessage", { chat_id: chatId, text: "No matching account found." });
 				return;
 			}
 			if (rows.length > 1) {
-				await tg(env, "sendMessage", { chat_id: chatId, text: "匹配到多个账号，请输入更精确的账号。" });
+				await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
 				return;
 			}
 			await tg(env, "sendMessage", {
@@ -226,7 +229,7 @@ async function handleMessage(env, message) {
 			});
 		} catch (err) {
 			console.error(err);
-			await tg(env, "sendMessage", { chat_id: chatId, text: "查询失败，请稍后重试。" });
+			await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
 		}
 		return;
 	}
@@ -275,7 +278,7 @@ async function handleMessage(env, message) {
 		}
 		await tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: "请先发送 /query 选择查询方式，或直接用 /x 账号、/tg 账号 查询。",
+			text: "Send /query first to choose a method, or search directly with /x <handle> or /tg <username>.",
 		});
 		return;
 	}
@@ -283,11 +286,11 @@ async function handleMessage(env, message) {
 	try {
 		const rows = mode === "x" ? await queryProfilesByX(env, text) : await queryProfilesByTelegram(env, text);
 		if (rows.length === 0) {
-			await tg(env, "sendMessage", { chat_id: chatId, text: "没有找到对应账号。" });
+			await tg(env, "sendMessage", { chat_id: chatId, text: "No matching account found." });
 			return;
 		}
 		if (rows.length > 1) {
-			await tg(env, "sendMessage", { chat_id: chatId, text: "匹配到多个账号，请输入更精确的账号。" });
+			await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
 			return;
 		}
 		await tg(env, "sendMessage", {
@@ -298,7 +301,7 @@ async function handleMessage(env, message) {
 		});
 	} catch (err) {
 		console.error(err);
-		await tg(env, "sendMessage", { chat_id: chatId, text: "查询失败，请稍后重试。" });
+		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
 	}
 }
 

@@ -5,13 +5,12 @@
  *
  * Required env vars:
  * - CREDIT_TG_BOT_TOKEN
- * - CREDIT_PROFILE_API_BASE
  * - DB (D1 binding)
  *
  * Optional env vars:
  * - WEBHOOK_PATH (default: /webhook)
  * - TELEGRAM_WEBHOOK_SECRET (validate header x-telegram-bot-api-secret-token)
- * - CHAT_MODE_TTL_SEC (default: 3600)
+ * - PROFILE_TABLE (default: profiles)
  */
 
 function normalizeInput(value) {
@@ -38,43 +37,12 @@ function getWebhookPath(env) {
 	return path.startsWith("/") ? path : `/${path}`;
 }
 
-async function getChatMode(env, chatId) {
-	const now = Math.floor(Date.now() / 1000);
-	const row = await env.DB.prepare("SELECT mode, expires_at FROM chat_modes WHERE chat_id = ?")
-		.bind(String(chatId))
-		.first();
-	if (!row) return null;
-	if (Number(row.expires_at || 0) <= now) {
-		await env.DB.prepare("DELETE FROM chat_modes WHERE chat_id = ?").bind(String(chatId)).run();
-		return null;
+function getProfilesTable(env) {
+	const table = String(env.PROFILE_TABLE || "profiles").trim();
+	if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
+		throw new Error("Invalid PROFILE_TABLE");
 	}
-	return String(row.mode || "");
-}
-
-async function setChatMode(env, chatId, mode) {
-	const ttl = Number(env.CHAT_MODE_TTL_SEC || 3600);
-	const expiresAt = Math.floor(Date.now() / 1000) + ttl;
-	await env.DB.prepare(
-		"INSERT INTO chat_modes (chat_id, mode, expires_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) " +
-			"ON CONFLICT(chat_id) DO UPDATE SET mode = excluded.mode, expires_at = excluded.expires_at, updated_at = CURRENT_TIMESTAMP"
-	)
-		.bind(String(chatId), String(mode), expiresAt)
-		.run();
-}
-
-async function clearChatMode(env, chatId) {
-	await env.DB.prepare("DELETE FROM chat_modes WHERE chat_id = ?").bind(String(chatId)).run();
-}
-
-async function ensureSchema(env) {
-	await env.DB.prepare(
-		"CREATE TABLE IF NOT EXISTS chat_modes (" +
-			"chat_id TEXT PRIMARY KEY," +
-			"mode TEXT NOT NULL," +
-			"expires_at INTEGER NOT NULL," +
-			"updated_at TEXT NOT NULL" +
-			")"
-	).run();
+	return table;
 }
 
 async function tg(env, method, payload) {
@@ -108,40 +76,65 @@ async function sendModeButtons(env, chatId) {
 	});
 }
 
-async function queryByX(env, handleInput) {
-	const handle = normalizeInput(handleInput);
-	if (!handle) return [];
-
-	const base = requireEnv(env, "CREDIT_PROFILE_API_BASE").replace(/\/+$/, "");
-	const url = `${base}/api/profiles?handle=${encodeURIComponent("@" + handle)}`;
-	const res = await fetch(url);
-	if (!res.ok) throw new Error("Profile API request failed");
-	const data = await res.json();
-	const rows = Array.isArray(data.results) ? data.results : [];
-	return rows.filter((row) => normalizeInput(row.handle).toLowerCase() === handle.toLowerCase());
+function buildPrompt(mode) {
+	if (mode === "x") {
+		return "[QUERY_MODE:x] 请输入 X 账号（例如 @demo 或 demo）";
+	}
+	return "[QUERY_MODE:tg] 请输入 Telegram 账号（例如 @demo 或 demo）";
 }
 
-async function queryByTelegram(env, tgInput) {
-	const target = normalizeInput(tgInput).toLowerCase();
-	if (!target) return [];
+async function askForInput(env, chatId, mode) {
+	return tg(env, "sendMessage", {
+		chat_id: chatId,
+		text: buildPrompt(mode),
+		reply_markup: {
+			force_reply: true,
+			input_field_placeholder: mode === "x" ? "输入 X 账号" : "输入 Telegram 账号",
+		},
+	});
+}
 
-	const base = requireEnv(env, "CREDIT_PROFILE_API_BASE").replace(/\/+$/, "");
-	const res = await fetch(`${base}/api/profiles`);
-	if (!res.ok) throw new Error("Profile API request failed");
-	const data = await res.json();
-	const rows = Array.isArray(data.results) ? data.results : [];
-	return rows.filter((row) => normalizeInput(row.telegram).toLowerCase() === target);
+function extractModeFromReply(message) {
+	const repliedText = String(message?.reply_to_message?.text || "");
+	const match = repliedText.match(/\[QUERY_MODE:(x|tg)\]/i);
+	return match ? match[1].toLowerCase() : "";
+}
+
+async function queryProfilesByX(env, input) {
+	const handle = normalizeInput(input).toLowerCase();
+	if (!handle) return [];
+
+	const table = getProfilesTable(env);
+	const sql =
+		`SELECT * FROM ${table} ` +
+		"WHERE LOWER(TRIM(REPLACE(COALESCE(handle, ''), '@', ''))) = ? " +
+		"LIMIT 5";
+	const result = await env.DB.prepare(sql).bind(handle).all();
+	return Array.isArray(result?.results) ? result.results : [];
+}
+
+async function queryProfilesByTelegram(env, input) {
+	const telegram = normalizeInput(input).toLowerCase();
+	if (!telegram) return [];
+
+	const table = getProfilesTable(env);
+	const sql =
+		`SELECT * FROM ${table} ` +
+		"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? " +
+		"LIMIT 5";
+	const result = await env.DB.prepare(sql).bind(telegram).all();
+	return Array.isArray(result?.results) ? result.results : [];
 }
 
 function formatRow(row) {
-	const name = escapeHtml(row.name || "Unnamed");
-	const handle = escapeHtml(row.handle || "");
-	const telegram = escapeHtml(row.telegram || "");
-	const district = escapeHtml(row.district || row.city || "Unknown");
-	const region = escapeHtml(row.region || row.province || "Unknown");
-	const country = escapeHtml(row.country || "Unknown");
-	const bio = escapeHtml(row.bio || "");
-	const profileUrl = escapeHtml(row.profile_url || "");
+	const name = escapeHtml(row?.name || "Unnamed");
+	const handle = escapeHtml(row?.handle || "");
+	const telegram = escapeHtml(row?.telegram || "");
+	const district = escapeHtml(row?.district || row?.city || "Unknown");
+	const region = escapeHtml(row?.region || row?.province || "Unknown");
+	const country = escapeHtml(row?.country || "Unknown");
+	const bio = escapeHtml(row?.bio || "");
+	const profileUrl = escapeHtml(row?.profile_url || "");
 
 	const lines = [
 		`<b>${name}</b>`,
@@ -155,7 +148,6 @@ function formatRow(row) {
 }
 
 async function handleStart(env, chatId) {
-	await clearChatMode(env, chatId);
 	await tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: "发送 /query 开始查询。",
@@ -163,7 +155,6 @@ async function handleStart(env, chatId) {
 }
 
 async function handleQuery(env, chatId) {
-	await clearChatMode(env, chatId);
 	await sendModeButtons(env, chatId);
 }
 
@@ -173,16 +164,14 @@ async function handleCallback(env, callbackQuery) {
 	if (!chatId) return;
 
 	if (data === "mode_x") {
-		await setChatMode(env, chatId, "x");
 		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 X 查询" });
-		await tg(env, "sendMessage", { chat_id: chatId, text: "请输入 X 账号（例如 @demo 或 demo）" });
+		await askForInput(env, chatId, "x");
 		return;
 	}
 
 	if (data === "mode_tg") {
-		await setChatMode(env, chatId, "tg");
 		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 Telegram 查询" });
-		await tg(env, "sendMessage", { chat_id: chatId, text: "请输入 Telegram 账号（例如 @demo 或 demo）" });
+		await askForInput(env, chatId, "tg");
 		return;
 	}
 
@@ -192,11 +181,12 @@ async function handleCallback(env, callbackQuery) {
 async function handleMessage(env, message) {
 	const chatId = message?.chat?.id;
 	const text = String(message?.text || "").trim();
+	if (!chatId || !text) return;
+
 	const command = text.split(/\s+/)[0].toLowerCase();
 	const isStartCmd = command === "/start" || command.startsWith("/start@");
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
 	const isQueryCmd = command === "/query" || command.startsWith("/query@");
-	if (!chatId || !text) return;
 
 	if (isStartCmd || isHelpCmd) {
 		await handleStart(env, chatId);
@@ -207,14 +197,17 @@ async function handleMessage(env, message) {
 		return;
 	}
 
-	const mode = await getChatMode(env, chatId);
+	const mode = extractModeFromReply(message);
 	if (!mode) {
-		await tg(env, "sendMessage", { chat_id: chatId, text: "请先发送 /query 并点击查询方式。" });
+		await tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: "请先发送 /query，选择查询方式后在输入框回复账号。",
+		});
 		return;
 	}
 
 	try {
-		const rows = mode === "x" ? await queryByX(env, text) : await queryByTelegram(env, text);
+		const rows = mode === "x" ? await queryProfilesByX(env, text) : await queryProfilesByTelegram(env, text);
 		if (rows.length === 0) {
 			await tg(env, "sendMessage", { chat_id: chatId, text: "没有找到对应账号。" });
 			return;
@@ -246,11 +239,11 @@ export default {
 	async fetch(request, env) {
 		try {
 			requireEnv(env, "CREDIT_TG_BOT_TOKEN");
-			requireEnv(env, "CREDIT_PROFILE_API_BASE");
 			if (!env.DB) {
 				throw new Error("Missing D1 binding: DB");
 			}
-			await ensureSchema(env);
+			getProfilesTable(env);
+			await env.DB.prepare("SELECT 1").first();
 		} catch (err) {
 			console.error(err);
 			return new Response("Config error", { status: 500 });

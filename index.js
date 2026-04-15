@@ -73,7 +73,7 @@ function isGroupChat(chat) {
 
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
-	const isCreditCmd = normalizeCommand(text) === "/credit";
+	const isCreditCmd = normalizeCommand(text) === "/mytgcredit";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
@@ -322,7 +322,7 @@ function formatRow(row) {
 async function handleStart(env, chatId) {
 	await tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "Send /query to start searching.",
+		text: "Send /myprofile to start searching.",
 	});
 }
 
@@ -406,12 +406,12 @@ async function handleMessage(env, message, ctx) {
 	const command = normalizeCommand(text);
 	const isStartCmd = command === "/start" || command.startsWith("/start@");
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
-	const isQueryCmd = command === "/query" || command.startsWith("/query@");
-	const isCreditCmd = command === "/credit" || command.startsWith("/credit@");
+	const isMyprofileCmd = command === "/myprofile" || command.startsWith("/myprofile@");
+	const isMytgcreditCmd = command === "/mytgcredit" || command.startsWith("/mytgcredit@");
 
-	if (isCreditCmd) {
+	if (isMytgcreditCmd) {
 		if (!isGroupChat(chat)) {
-			await tg(env, "sendMessage", { chat_id: chatId, text: "Use /credit inside a group chat." });
+			await tg(env, "sendMessage", { chat_id: chatId, text: "Use /mytgcredit inside a group chat." });
 			return;
 		}
 		const sent = await sendCredit(env, chatId);
@@ -424,7 +424,7 @@ async function handleMessage(env, message, ctx) {
 		await handleStart(env, chatId);
 		return;
 	}
-	if (isQueryCmd) {
+	if (isMyprofileCmd) {
 		await handleQuery(env, chatId, chat, ctx, message?.message_id);
 		return;
 	}

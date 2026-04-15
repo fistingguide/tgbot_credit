@@ -6,7 +6,7 @@
  * Required env vars:
  * - CREDIT_TG_BOT_TOKEN
  * - CREDIT_PROFILE_API_BASE
- * - CHAT_MODE_KV (KV binding)
+ * - DB (D1 binding)
  *
  * Optional env vars:
  * - WEBHOOK_PATH (default: /webhook)
@@ -38,21 +38,43 @@ function getWebhookPath(env) {
 	return path.startsWith("/") ? path : `/${path}`;
 }
 
-function getChatModeKey(chatId) {
-	return `chat_mode:${chatId}`;
-}
-
 async function getChatMode(env, chatId) {
-	return env.CHAT_MODE_KV.get(getChatModeKey(chatId));
+	const now = Math.floor(Date.now() / 1000);
+	const row = await env.DB.prepare("SELECT mode, expires_at FROM chat_modes WHERE chat_id = ?")
+		.bind(String(chatId))
+		.first();
+	if (!row) return null;
+	if (Number(row.expires_at || 0) <= now) {
+		await env.DB.prepare("DELETE FROM chat_modes WHERE chat_id = ?").bind(String(chatId)).run();
+		return null;
+	}
+	return String(row.mode || "");
 }
 
 async function setChatMode(env, chatId, mode) {
 	const ttl = Number(env.CHAT_MODE_TTL_SEC || 3600);
-	await env.CHAT_MODE_KV.put(getChatModeKey(chatId), mode, { expirationTtl: ttl });
+	const expiresAt = Math.floor(Date.now() / 1000) + ttl;
+	await env.DB.prepare(
+		"INSERT INTO chat_modes (chat_id, mode, expires_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) " +
+			"ON CONFLICT(chat_id) DO UPDATE SET mode = excluded.mode, expires_at = excluded.expires_at, updated_at = CURRENT_TIMESTAMP"
+	)
+		.bind(String(chatId), String(mode), expiresAt)
+		.run();
 }
 
 async function clearChatMode(env, chatId) {
-	await env.CHAT_MODE_KV.delete(getChatModeKey(chatId));
+	await env.DB.prepare("DELETE FROM chat_modes WHERE chat_id = ?").bind(String(chatId)).run();
+}
+
+async function ensureSchema(env) {
+	await env.DB.prepare(
+		"CREATE TABLE IF NOT EXISTS chat_modes (" +
+			"chat_id TEXT PRIMARY KEY," +
+			"mode TEXT NOT NULL," +
+			"expires_at INTEGER NOT NULL," +
+			"updated_at TEXT NOT NULL" +
+			")"
+	).run();
 }
 
 async function tg(env, method, payload) {
@@ -225,9 +247,10 @@ export default {
 		try {
 			requireEnv(env, "CREDIT_TG_BOT_TOKEN");
 			requireEnv(env, "CREDIT_PROFILE_API_BASE");
-			if (!env.CHAT_MODE_KV) {
-				throw new Error("Missing KV binding: CHAT_MODE_KV");
+			if (!env.DB) {
+				throw new Error("Missing D1 binding: DB");
 			}
+			await ensureSchema(env);
 		} catch (err) {
 			console.error(err);
 			return new Response("Config error", { status: 500 });

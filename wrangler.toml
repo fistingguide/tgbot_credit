@@ -1,0 +1,9 @@
+﻿name = "tgbot-credit"
+main = "index.js"
+compatibility_date = "2026-04-15"
+
+# Create KV with: wrangler kv namespace create CHAT_MODE_KV
+# Then fill the namespace id below.
+[[kv_namespaces]]
+binding = "CHAT_MODE_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

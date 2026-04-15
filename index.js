@@ -1,29 +1,18 @@
-"use strict";
+﻿"use strict";
 
 /**
- * Telegram query bot (read-only, no create/update).
+ * Telegram query bot on Cloudflare Workers (webhook mode).
  *
- * Env:
- * - CREDIT_TG_BOT_TOKEN: Telegram bot token (required)
- * - CREDIT_PROFILE_API_BASE: e.g. https://your-domain.com (required)
- * - POLL_TIMEOUT_SEC: long polling timeout seconds (optional, default 30)
+ * Required env vars:
+ * - CREDIT_TG_BOT_TOKEN
+ * - CREDIT_PROFILE_API_BASE
+ * - CHAT_MODE_KV (KV binding)
+ *
+ * Optional env vars:
+ * - WEBHOOK_PATH (default: /webhook)
+ * - TELEGRAM_WEBHOOK_SECRET (validate header x-telegram-bot-api-secret-token)
+ * - CHAT_MODE_TTL_SEC (default: 3600)
  */
-
-const TG_BOT_TOKEN = process.env.CREDIT_TG_BOT_TOKEN || "";
-const PROFILE_API_BASE = (process.env.CREDIT_PROFILE_API_BASE || "").replace(/\/+$/, "");
-const POLL_TIMEOUT_SEC = Number(process.env.POLL_TIMEOUT_SEC || 30);
-
-if (!TG_BOT_TOKEN) {
-	console.error("Missing CREDIT_TG_BOT_TOKEN");
-	process.exit(1);
-}
-if (!PROFILE_API_BASE) {
-	console.error("Missing CREDIT_PROFILE_API_BASE");
-	process.exit(1);
-}
-
-const TELEGRAM_API = `https://api.telegram.org/bot${TG_BOT_TOKEN}`;
-const chatModes = new Map(); // chatId -> "x" | "tg"
 
 function normalizeInput(value) {
 	return String(value || "").trim().replace(/^@+/, "");
@@ -36,8 +25,41 @@ function escapeHtml(value) {
 		.replaceAll(">", "&gt;");
 }
 
-async function tg(method, payload) {
-	const res = await fetch(`${TELEGRAM_API}/${method}`, {
+function requireEnv(env, key) {
+	const value = String(env[key] || "").trim();
+	if (!value) {
+		throw new Error(`Missing env: ${key}`);
+	}
+	return value;
+}
+
+function getWebhookPath(env) {
+	const path = String(env.WEBHOOK_PATH || "/webhook").trim();
+	return path.startsWith("/") ? path : `/${path}`;
+}
+
+function getChatModeKey(chatId) {
+	return `chat_mode:${chatId}`;
+}
+
+async function getChatMode(env, chatId) {
+	return env.CHAT_MODE_KV.get(getChatModeKey(chatId));
+}
+
+async function setChatMode(env, chatId, mode) {
+	const ttl = Number(env.CHAT_MODE_TTL_SEC || 3600);
+	await env.CHAT_MODE_KV.put(getChatModeKey(chatId), mode, { expirationTtl: ttl });
+}
+
+async function clearChatMode(env, chatId) {
+	await env.CHAT_MODE_KV.delete(getChatModeKey(chatId));
+}
+
+async function tg(env, method, payload) {
+	const token = requireEnv(env, "CREDIT_TG_BOT_TOKEN");
+	const api = `https://api.telegram.org/bot${token}`;
+
+	const res = await fetch(`${api}/${method}`, {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(payload),
@@ -49,8 +71,8 @@ async function tg(method, payload) {
 	return data.result;
 }
 
-async function sendModeButtons(chatId) {
-	return tg("sendMessage", {
+async function sendModeButtons(env, chatId) {
+	return tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: "请选择查询方式：",
 		reply_markup: {
@@ -64,21 +86,25 @@ async function sendModeButtons(chatId) {
 	});
 }
 
-async function queryByX(handleInput) {
+async function queryByX(env, handleInput) {
 	const handle = normalizeInput(handleInput);
 	if (!handle) return [];
-	const res = await fetch(`${PROFILE_API_BASE}/api/profiles?handle=${encodeURIComponent("@" + handle)}`);
+
+	const base = requireEnv(env, "CREDIT_PROFILE_API_BASE").replace(/\/+$/, "");
+	const url = `${base}/api/profiles?handle=${encodeURIComponent("@" + handle)}`;
+	const res = await fetch(url);
 	if (!res.ok) throw new Error("Profile API request failed");
 	const data = await res.json();
 	const rows = Array.isArray(data.results) ? data.results : [];
 	return rows.filter((row) => normalizeInput(row.handle).toLowerCase() === handle.toLowerCase());
 }
 
-async function queryByTelegram(tgInput) {
+async function queryByTelegram(env, tgInput) {
 	const target = normalizeInput(tgInput).toLowerCase();
 	if (!target) return [];
-	// No dedicated tg query endpoint; fetch all and filter in bot.
-	const res = await fetch(`${PROFILE_API_BASE}/api/profiles`);
+
+	const base = requireEnv(env, "CREDIT_PROFILE_API_BASE").replace(/\/+$/, "");
+	const res = await fetch(`${base}/api/profiles`);
 	if (!res.ok) throw new Error("Profile API request failed");
 	const data = await res.json();
 	const rows = Array.isArray(data.results) ? data.results : [];
@@ -106,42 +132,42 @@ function formatRow(row) {
 	return lines.join("\n");
 }
 
-async function handleStart(chatId) {
-	chatModes.delete(chatId);
-	await tg("sendMessage", {
+async function handleStart(env, chatId) {
+	await clearChatMode(env, chatId);
+	await tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: "发送 /query 开始查询。",
 	});
 }
 
-async function handleQuery(chatId) {
-	chatModes.delete(chatId);
-	await sendModeButtons(chatId);
+async function handleQuery(env, chatId) {
+	await clearChatMode(env, chatId);
+	await sendModeButtons(env, chatId);
 }
 
-async function handleCallback(callbackQuery) {
+async function handleCallback(env, callbackQuery) {
 	const chatId = callbackQuery?.message?.chat?.id;
 	const data = String(callbackQuery?.data || "");
 	if (!chatId) return;
 
 	if (data === "mode_x") {
-		chatModes.set(chatId, "x");
-		await tg("answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 X 查询" });
-		await tg("sendMessage", { chat_id: chatId, text: "请输入 X 账号（例如 @demo 或 demo）" });
+		await setChatMode(env, chatId, "x");
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 X 查询" });
+		await tg(env, "sendMessage", { chat_id: chatId, text: "请输入 X 账号（例如 @demo 或 demo）" });
 		return;
 	}
 
 	if (data === "mode_tg") {
-		chatModes.set(chatId, "tg");
-		await tg("answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 Telegram 查询" });
-		await tg("sendMessage", { chat_id: chatId, text: "请输入 Telegram 账号（例如 @demo 或 demo）" });
+		await setChatMode(env, chatId, "tg");
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "已切换到 Telegram 查询" });
+		await tg(env, "sendMessage", { chat_id: chatId, text: "请输入 Telegram 账号（例如 @demo 或 demo）" });
 		return;
 	}
 
-	await tg("answerCallbackQuery", { callback_query_id: callbackQuery.id });
+	await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id });
 }
 
-async function handleMessage(message) {
+async function handleMessage(env, message) {
 	const chatId = message?.chat?.id;
 	const text = String(message?.text || "").trim();
 	const command = text.split(/\s+/)[0].toLowerCase();
@@ -151,31 +177,31 @@ async function handleMessage(message) {
 	if (!chatId || !text) return;
 
 	if (isStartCmd || isHelpCmd) {
-		await handleStart(chatId);
+		await handleStart(env, chatId);
 		return;
 	}
 	if (isQueryCmd) {
-		await handleQuery(chatId);
+		await handleQuery(env, chatId);
 		return;
 	}
 
-	const mode = chatModes.get(chatId);
+	const mode = await getChatMode(env, chatId);
 	if (!mode) {
-		await tg("sendMessage", { chat_id: chatId, text: "请先发送 /query 并点击查询方式。" });
+		await tg(env, "sendMessage", { chat_id: chatId, text: "请先发送 /query 并点击查询方式。" });
 		return;
 	}
 
 	try {
-		const rows = mode === "x" ? await queryByX(text) : await queryByTelegram(text);
+		const rows = mode === "x" ? await queryByX(env, text) : await queryByTelegram(env, text);
 		if (rows.length === 0) {
-			await tg("sendMessage", { chat_id: chatId, text: "没有找到对应账号。" });
+			await tg(env, "sendMessage", { chat_id: chatId, text: "没有找到对应账号。" });
 			return;
 		}
 		if (rows.length > 1) {
-			await tg("sendMessage", { chat_id: chatId, text: "匹配到多个账号，请输入更精确的账号。" });
+			await tg(env, "sendMessage", { chat_id: chatId, text: "匹配到多个账号，请输入更精确的账号。" });
 			return;
 		}
-		await tg("sendMessage", {
+		await tg(env, "sendMessage", {
 			chat_id: chatId,
 			text: formatRow(rows[0]),
 			parse_mode: "HTML",
@@ -183,43 +209,61 @@ async function handleMessage(message) {
 		});
 	} catch (err) {
 		console.error(err);
-		await tg("sendMessage", { chat_id: chatId, text: "查询失败，请稍后重试。" });
+		await tg(env, "sendMessage", { chat_id: chatId, text: "查询失败，请稍后重试。" });
 	}
 }
 
-async function run() {
-	let offset = 0;
-	console.log("credit.js bot started");
-	while (true) {
+function isWebhookAuthorized(env, request) {
+	const expected = String(env.TELEGRAM_WEBHOOK_SECRET || "").trim();
+	if (!expected) return true;
+	const provided = request.headers.get("x-telegram-bot-api-secret-token") || "";
+	return expected === provided;
+}
+
+export default {
+	async fetch(request, env) {
 		try {
-			const res = await fetch(`${TELEGRAM_API}/getUpdates`, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					offset,
-					timeout: POLL_TIMEOUT_SEC,
-					allowed_updates: ["message", "callback_query"],
-				}),
-			});
-			const data = await res.json();
-			if (!res.ok || !data?.ok) {
-				await new Promise((r) => setTimeout(r, 1200));
-				continue;
-			}
-			const updates = Array.isArray(data.result) ? data.result : [];
-			for (const upd of updates) {
-				offset = Math.max(offset, Number(upd.update_id) + 1);
-				if (upd.callback_query) await handleCallback(upd.callback_query);
-				if (upd.message) await handleMessage(upd.message);
+			requireEnv(env, "CREDIT_TG_BOT_TOKEN");
+			requireEnv(env, "CREDIT_PROFILE_API_BASE");
+			if (!env.CHAT_MODE_KV) {
+				throw new Error("Missing KV binding: CHAT_MODE_KV");
 			}
 		} catch (err) {
-			console.error("polling error", err);
-			await new Promise((r) => setTimeout(r, 1200));
+			console.error(err);
+			return new Response("Config error", { status: 500 });
 		}
-	}
-}
 
-run().catch((err) => {
-	console.error(err);
-	process.exit(1);
-});
+		const url = new URL(request.url);
+		const webhookPath = getWebhookPath(env);
+
+		if (request.method === "GET" && url.pathname === "/healthz") {
+			return new Response("ok", { status: 200 });
+		}
+
+		if (request.method !== "POST" || url.pathname !== webhookPath) {
+			return new Response("Not found", { status: 404 });
+		}
+
+		if (!isWebhookAuthorized(env, request)) {
+			return new Response("Unauthorized", { status: 401 });
+		}
+
+		const update = await request.json().catch(() => null);
+		if (!update) {
+			return new Response("Bad request", { status: 400 });
+		}
+
+		try {
+			if (update.callback_query) {
+				await handleCallback(env, update.callback_query);
+			}
+			if (update.message) {
+				await handleMessage(env, update.message);
+			}
+		} catch (err) {
+			console.error("Update handling failed:", err);
+		}
+
+		return new Response("ok", { status: 200 });
+	},
+};

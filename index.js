@@ -426,11 +426,49 @@ async function handleStart(env, chatId) {
 	});
 }
 
-async function handleQuery(env, chatId, chat, ctx, requestMessageId) {
-	const sent = await sendModeButtons(env, chatId);
-	if (isGroupChat(chat)) {
-		scheduleDeleteMessage(env, ctx, chatId, requestMessageId, 30000);
-		scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 30000);
+async function handleMyProfile(env, message, ctx) {
+	const chatId = message?.chat?.id;
+	const chat = message?.chat;
+	const telegramUsername = normalizeInput(message?.from?.username).toLowerCase();
+	if (!chatId) return;
+
+	if (!telegramUsername) {
+		await tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
+		});
+		return;
+	}
+
+	try {
+		const rows = await queryProfilesByTelegram(env, telegramUsername);
+		if (rows.length === 0) {
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: MISSING_TELEGRAM_PROFILE_MESSAGE,
+			});
+			return;
+		}
+		if (rows.length > 1) {
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: "Multiple profiles found for your Telegram username. Please contact admin.",
+			});
+			return;
+		}
+		const sent = await tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: formatRow(rows[0]),
+			parse_mode: "HTML",
+			disable_web_page_preview: true,
+		});
+		if (isGroupChat(chat)) {
+			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+		}
+	} catch (err) {
+		console.error(err);
+		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
 	}
 }
 
@@ -537,7 +575,7 @@ async function handleMessage(env, message, ctx) {
 		return;
 	}
 	if (isMyprofileCmd) {
-		await handleQuery(env, chatId, chat, ctx, message?.message_id);
+		await handleMyProfile(env, message, ctx);
 		return;
 	}
 

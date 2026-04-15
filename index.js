@@ -69,8 +69,7 @@ function buildIncrements(message) {
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
-	const star = msgCount + photoCount * 3 + videoCount * 9;
-	return { msgCount, photoCount, videoCount, star };
+	return { msgCount, photoCount, videoCount };
 }
 
 async function tg(env, method, payload) {
@@ -189,8 +188,8 @@ async function upsertCredit(env, message) {
 	const from = message?.from;
 	if (!from?.id || from?.is_bot) return;
 
-	const { msgCount, photoCount, videoCount, star } = buildIncrements(message);
-	if (msgCount === 0 && photoCount === 0 && videoCount === 0 && star === 0) return;
+	const { msgCount, photoCount, videoCount } = buildIncrements(message);
+	if (msgCount === 0 && photoCount === 0 && videoCount === 0) return;
 	const table = getProfilesTable(env);
 	const tgUserId = String(from.id);
 	const telegram = normalizeInput(from.username).toLowerCase();
@@ -206,10 +205,14 @@ async function upsertCredit(env, message) {
 			"tg_photo_cnt = COALESCE(tg_photo_cnt, 0) + ?, " +
 			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
 			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
-			"total_credit = COALESCE(total_credit, 0) + ? " +
+			"total_credit = " +
+			"(COALESCE(followers_cnt, 0) / 100.0) + " +
+			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
+			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
+			"((COALESCE(tg_video_cnt, 0) + ?) * 10) " +
 			"WHERE TRIM(COALESCE(tg_user_id, '')) = ?"
 	)
-		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, eventCnt, star, tgUserId)
+		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, tgUserId)
 		.run();
 	const changedByUserId = Number(updateByTgUserId?.meta?.changes || 0);
 	if (changedByUserId > 0) return;
@@ -228,10 +231,14 @@ async function upsertCredit(env, message) {
 			"tg_photo_cnt = COALESCE(tg_photo_cnt, 0) + ?, " +
 			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
 			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
-			"total_credit = COALESCE(total_credit, 0) + ? " +
+			"total_credit = " +
+			"(COALESCE(followers_cnt, 0) / 100.0) + " +
+			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
+			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
+			"((COALESCE(tg_video_cnt, 0) + ?) * 10) " +
 			"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ?"
 	)
-		.bind(tgUserId, msgCount, photoCount, videoCount, eventCnt, star, telegram)
+		.bind(tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, telegram)
 		.run();
 	const changedByTelegram = Number(updateByTelegram?.meta?.changes || 0);
 	if (changedByTelegram === 0) {

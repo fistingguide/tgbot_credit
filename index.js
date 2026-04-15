@@ -331,11 +331,13 @@ async function handleMessage(env, message) {
 	const chatId = message?.chat?.id;
 	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
-	if (!chatId || !text) return;
+	if (!chatId) return;
 
 	if (isGroupChat(chat)) {
 		await upsertCredit(env, message);
 	}
+
+	if (!text) return;
 
 	const modeCommand = parseModeCommand(text);
 	if (modeCommand) {

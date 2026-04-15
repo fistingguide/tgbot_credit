@@ -96,12 +96,6 @@ async function ensureSchema(env) {
 		(Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || ""))
 	);
 	const hasUsername = existingColumns.has("username");
-	const hasLegacyColumns =
-		existingColumns.has("chat_id") ||
-		existingColumns.has("first_name") ||
-		existingColumns.has("last_name") ||
-		existingColumns.has("username") ||
-		existingColumns.has("list_star");
 
 	if (!existingColumns.has("user_handle")) {
 		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN user_handle TEXT`).run();
@@ -131,51 +125,18 @@ async function ensureSchema(env) {
 				"WHERE COALESCE(star, 0) = 0"
 		).run();
 	}
+}
 
-	const indexRows = await env.DB.prepare(`PRAGMA index_list(${table})`).all();
-	const hasUserIdUniqueIndex = (Array.isArray(indexRows?.results) ? indexRows.results : []).some((row) => {
-		const idxName = String(row?.name || "");
-		return idxName === `idx_${table}_user_id`;
-	});
-
-	if (!hasUserIdUniqueIndex) {
-		if (hasLegacyColumns) {
-			await env.DB.prepare(
-				`UPDATE ${table} ` +
-					"SET msg_count = (SELECT SUM(COALESCE(t2.msg_count, 0)) FROM " +
-					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-					"photo_count = (SELECT SUM(COALESCE(t2.photo_count, 0)) FROM " +
-					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-					"video_count = (SELECT SUM(COALESCE(t2.video_count, 0)) FROM " +
-					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-					`star = (SELECT SUM(COALESCE(${existingColumns.has("list_star") ? "t2.star, t2.list_star" : "t2.star"}, 0)) FROM ${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-					"updated_at = (SELECT MAX(t2.updated_at) FROM " +
-					`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
-					"user_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.user_handle, '')), '')) FROM " +
-					`${table} t2 WHERE t2.user_id = ${table}.user_id), user_handle), ` +
-					"x_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.x_handle, '')), '')) FROM " +
-					`${table} t2 WHERE t2.user_id = ${table}.user_id), x_handle)`
-			).run();
-
-			await env.DB.prepare(
-				`DELETE FROM ${table} WHERE rowid NOT IN (` +
-					`SELECT MIN(rowid) FROM ${table} GROUP BY user_id` +
-					")"
-			).run();
-		}
-
-		await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_user_id ON ${table}(user_id)`).run();
-	}
-
-	for (const legacyColumn of ["chat_id", "first_name", "last_name", "username", "list_star"]) {
-		if (existingColumns.has(legacyColumn)) {
-			try {
-				await env.DB.prepare(`ALTER TABLE ${table} DROP COLUMN ${legacyColumn}`).run();
-			} catch (err) {
-				console.warn(`Skip dropping column ${legacyColumn}:`, err);
-			}
-		}
-	}
+async function getCreditSchema(env) {
+	const table = getCreditTable(env);
+	const columnsResult = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
+	const columns = new Set((Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || "")));
+	return {
+		table,
+		hasChatId: columns.has("chat_id"),
+		hasUsername: columns.has("username"),
+		hasListStar: columns.has("list_star"),
+	};
 }
 
 async function tg(env, method, payload) {
@@ -200,9 +161,30 @@ async function upsertCredit(env, message) {
 	const { msgCount, photoCount, videoCount, star } = buildIncrements(message);
 	if (msgCount === 0 && photoCount === 0 && videoCount === 0 && star === 0) return;
 
-	const table = getCreditTable(env);
+	const schema = await getCreditSchema(env);
+	if (schema.hasChatId) {
+		const chatId = message?.chat?.id;
+		if (!chatId) return;
+		const sql =
+			`INSERT INTO ${schema.table} ` +
+			"(chat_id, user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at) " +
+			"VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
+			"ON CONFLICT(chat_id, user_id) DO UPDATE SET " +
+			"user_handle = excluded.user_handle, " +
+			"x_handle = CASE WHEN TRIM(COALESCE(excluded.x_handle, '')) <> '' THEN excluded.x_handle ELSE x_handle END, " +
+			"msg_count = msg_count + excluded.msg_count, " +
+			"photo_count = photo_count + excluded.photo_count, " +
+			"video_count = video_count + excluded.video_count, " +
+			"star = star + excluded.star, " +
+			"updated_at = CURRENT_TIMESTAMP";
+		await env.DB.prepare(sql)
+			.bind(String(chatId), String(from.id), String(from.username || "").trim(), "", msgCount, photoCount, videoCount, star)
+			.run();
+		return;
+	}
+
 	const sql =
-		`INSERT INTO ${table} ` +
+		`INSERT INTO ${schema.table} ` +
 		"(user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at) " +
 		"VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
 		"ON CONFLICT(user_id) DO UPDATE SET " +
@@ -213,7 +195,6 @@ async function upsertCredit(env, message) {
 		"video_count = video_count + excluded.video_count, " +
 		"star = star + excluded.star, " +
 		"updated_at = CURRENT_TIMESTAMP";
-
 	await env.DB.prepare(sql)
 		.bind(String(from.id), String(from.username || "").trim(), "", msgCount, photoCount, videoCount, star)
 		.run();
@@ -247,9 +228,16 @@ function formatCredit(rows) {
 }
 
 async function sendCredit(env, chatId) {
-	const table = getCreditTable(env);
+	const schema = await getCreditSchema(env);
+	const handleExpr = schema.hasUsername
+		? "COALESCE(MAX(NULLIF(TRIM(COALESCE(user_handle, '')), '')), MAX(NULLIF(TRIM(COALESCE(username, '')), '')))"
+		: "MAX(NULLIF(TRIM(COALESCE(user_handle, '')), ''))";
+	const starExpr = schema.hasListStar ? "COALESCE(star, list_star, 0)" : "COALESCE(star, 0)";
 	const sql =
-		`SELECT user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at FROM ${table} ` +
+		`SELECT user_id, ${handleExpr} AS user_handle, MAX(NULLIF(TRIM(COALESCE(x_handle, '')), '')) AS x_handle, ` +
+		`SUM(COALESCE(msg_count, 0)) AS msg_count, SUM(COALESCE(photo_count, 0)) AS photo_count, ` +
+		`SUM(COALESCE(video_count, 0)) AS video_count, SUM(${starExpr}) AS star, MAX(updated_at) AS updated_at ` +
+		`FROM ${schema.table} GROUP BY user_id ` +
 		"ORDER BY star DESC, updated_at DESC " +
 		"LIMIT 50";
 	const result = await env.DB.prepare(sql).all();
@@ -269,7 +257,11 @@ async function handleMessage(update, env) {
 	const chat = message?.chat;
 	if (!isGroupChat(chat)) return;
 
-	await upsertCredit(env, message);
+	try {
+		await upsertCredit(env, message);
+	} catch (err) {
+		console.error("upsertCredit failed:", err);
+	}
 
 	const text = String(message?.text || "").trim();
 	const cmd = normalizeCommand(text);

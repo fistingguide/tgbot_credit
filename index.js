@@ -4,7 +4,7 @@
  * Telegram query bot on Cloudflare Workers (webhook mode).
  *
  * Required env vars:
- * - CREDIT_TG_BOT_TOKEN
+ * - TG_BOT_TOKEN or CREDIT_TG_BOT_TOKEN
  * - DB (D1 binding)
  *
  * Optional env vars:
@@ -24,17 +24,22 @@ function escapeHtml(value) {
 		.replaceAll(">", "&gt;");
 }
 
-function requireEnv(env, key) {
-	const value = String(env[key] || "").trim();
-	if (!value) {
-		throw new Error(`Missing env: ${key}`);
+function getBotToken(env) {
+	const token = String(env.TG_BOT_TOKEN || env.CREDIT_TG_BOT_TOKEN || "").trim();
+	if (!token) {
+		throw new Error("Missing TG_BOT_TOKEN/CREDIT_TG_BOT_TOKEN in Worker env");
 	}
-	return value;
+	return token;
 }
 
-function getWebhookPath(env) {
-	const path = String(env.WEBHOOK_PATH || "/webhook").trim();
-	return path.startsWith("/") ? path : `/${path}`;
+function getWebhookPaths(env) {
+	const configured = String(env.WEBHOOK_PATH || "").trim();
+	const normalizedConfigured = configured ? (configured.startsWith("/") ? configured : `/${configured}`) : "";
+	const paths = ["/webhook", "/telegram"];
+	if (normalizedConfigured && !paths.includes(normalizedConfigured)) {
+		paths.push(normalizedConfigured);
+	}
+	return paths;
 }
 
 function getProfilesTable(env) {
@@ -46,7 +51,7 @@ function getProfilesTable(env) {
 }
 
 async function tg(env, method, payload) {
-	const token = requireEnv(env, "CREDIT_TG_BOT_TOKEN");
+	const token = getBotToken(env);
 	const api = `https://api.telegram.org/bot${token}`;
 
 	const res = await fetch(`${api}/${method}`, {
@@ -56,7 +61,7 @@ async function tg(env, method, payload) {
 	});
 	const data = await res.json().catch(() => null);
 	if (!res.ok || !data || data.ok !== true) {
-		throw new Error(`Telegram API failed: ${method}`);
+		throw new Error(`Telegram API failed: ${method}; status=${res.status}; body=${JSON.stringify(data)}`);
 	}
 	return data.result;
 }
@@ -238,7 +243,7 @@ function isWebhookAuthorized(env, request) {
 export default {
 	async fetch(request, env) {
 		try {
-			requireEnv(env, "CREDIT_TG_BOT_TOKEN");
+			getBotToken(env);
 			if (!env.DB) {
 				throw new Error("Missing D1 binding: DB");
 			}
@@ -246,17 +251,17 @@ export default {
 			await env.DB.prepare("SELECT 1").first();
 		} catch (err) {
 			console.error(err);
-			return new Response("Config error", { status: 500 });
+			return new Response(`Config error: ${String(err?.message || err)}`, { status: 500 });
 		}
 
 		const url = new URL(request.url);
-		const webhookPath = getWebhookPath(env);
+		const webhookPaths = getWebhookPaths(env);
 
 		if (request.method === "GET" && url.pathname === "/healthz") {
 			return new Response("ok", { status: 200 });
 		}
 
-		if (request.method !== "POST" || url.pathname !== webhookPath) {
+		if (request.method !== "POST" || !webhookPaths.includes(url.pathname)) {
 			return new Response("Not found", { status: 404 });
 		}
 
@@ -278,6 +283,7 @@ export default {
 			}
 		} catch (err) {
 			console.error("Update handling failed:", err);
+			return new Response(`Update handling failed: ${String(err?.message || err)}`, { status: 500 });
 		}
 
 		return new Response("ok", { status: 200 });

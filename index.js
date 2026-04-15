@@ -290,9 +290,8 @@ function formatMyCredit(row) {
 	return [
 		"<b>⭐ My Credit</b>",
 		"━━━━━━━━━━━━",
-		`🐦 <b>Followers</b>: <b>${followersCount}</b>`,
 		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>${xHandle}</b>` : ""}`,
-		`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>`,
+		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b> ⭐<b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	].join("\n");
 }

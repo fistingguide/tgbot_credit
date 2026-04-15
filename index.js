@@ -96,6 +96,27 @@ async function tg(env, method, payload) {
 	return data.result;
 }
 
+function delay(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function scheduleDeleteMessage(env, ctx, chatId, messageId, delayMs = 20000) {
+	if (!ctx || !chatId || !messageId) return;
+	ctx.waitUntil(
+		(async () => {
+			await delay(delayMs);
+			try {
+				await tg(env, "deleteMessage", {
+					chat_id: chatId,
+					message_id: messageId,
+				});
+			} catch (err) {
+				console.error("deleteMessage failed:", err);
+			}
+		})()
+	);
+}
+
 async function sendModeButtons(env, chatId) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -241,7 +262,7 @@ async function sendCredit(env, chatId) {
 	const result = await env.DB.prepare(sql).bind(String(chatId)).all();
 	const rows = Array.isArray(result?.results) ? result.results : [];
 
-	await tg(env, "sendMessage", {
+	return tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: formatCredit(rows),
 		parse_mode: "HTML",
@@ -329,7 +350,7 @@ async function handleCallback(env, callbackQuery) {
 	await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id });
 }
 
-async function handleMessage(env, message) {
+async function handleMessage(env, message, ctx) {
 	const chatId = message?.chat?.id;
 	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
@@ -386,7 +407,9 @@ async function handleMessage(env, message) {
 			await tg(env, "sendMessage", { chat_id: chatId, text: "Use /credit inside a group chat." });
 			return;
 		}
-		await sendCredit(env, chatId);
+		const sent = await sendCredit(env, chatId);
+		scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
+		scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
 		return;
 	}
 
@@ -459,7 +482,7 @@ function isWebhookAuthorized(env, request) {
 }
 
 export default {
-	async fetch(request, env) {
+	async fetch(request, env, ctx) {
 		try {
 			getBotToken(env);
 			if (!env.DB) {
@@ -498,9 +521,9 @@ export default {
 			if (update.callback_query) {
 				await handleCallback(env, update.callback_query);
 			}
-			if (update.message) {
-				await handleMessage(env, update.message);
-			}
+				if (update.message) {
+					await handleMessage(env, update.message, ctx);
+				}
 		} catch (err) {
 			console.error("Update handling failed:", err);
 			return new Response(`Update handling failed: ${String(err?.message || err)}`, { status: 500 });

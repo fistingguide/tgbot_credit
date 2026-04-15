@@ -221,9 +221,9 @@ function formatCredit(rows) {
 		const msg = Number(row?.msg_count || 0);
 		const photo = Number(row?.photo_count || 0);
 		const video = Number(row?.video_count || 0);
-		const total = msg + photo + video;
+		const total = msg + photo * 3 + video * 9;
 		lines.push(`${i + 1}. 👤 <b>${name}</b>${username ? ` (@${username})` : ""}`);
-		lines.push(`💬 Msg: <b>${msg}</b>   🖼️ Photo: <b>${photo}</b>   🎬 Video: <b>${video}</b>   ⭐ Total: <b>${total}</b>`);
+		lines.push(`💬: <b>${msg}</b>   🖼️: <b>${photo}</b>   🎬: <b>${video}</b>   ⭐: <b>${total}</b>`);
 	}
 	lines.push("━━━━━━━━━━━━");
 	return lines.join("\n");
@@ -234,7 +234,7 @@ async function sendCredit(env, chatId) {
 	const sql =
 		`SELECT user_id, username, first_name, last_name, msg_count, photo_count, video_count FROM ${table} ` +
 		"WHERE chat_id = ? " +
-		"ORDER BY (msg_count + photo_count + video_count) DESC, updated_at DESC " +
+		"ORDER BY (msg_count + photo_count * 3 + video_count * 9) DESC, updated_at DESC " +
 		"LIMIT 50";
 	const result = await env.DB.prepare(sql).bind(String(chatId)).all();
 	const rows = Array.isArray(result?.results) ? result.results : [];
@@ -399,7 +399,31 @@ async function handleMessage(env, message) {
 
 	const mode = extractModeFromReply(message);
 	if (!mode) {
-		// Keep silent on non-command messages to avoid noisy auto-replies.
+		// Silent fallback: try exact lookup without sending guidance text.
+		try {
+			const byX = await queryProfilesByX(env, text);
+			if (byX.length === 1) {
+				await tg(env, "sendMessage", {
+					chat_id: chatId,
+					text: formatRow(byX[0]),
+					parse_mode: "HTML",
+					disable_web_page_preview: true,
+				});
+				return;
+			}
+			const byTg = await queryProfilesByTelegram(env, text);
+			if (byTg.length === 1) {
+				await tg(env, "sendMessage", {
+					chat_id: chatId,
+					text: formatRow(byTg[0]),
+					parse_mode: "HTML",
+					disable_web_page_preview: true,
+				});
+				return;
+			}
+		} catch (err) {
+			console.error(err);
+		}
 		return;
 	}
 

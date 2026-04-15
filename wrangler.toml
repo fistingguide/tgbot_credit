@@ -1,9 +1,8 @@
-﻿name = "tgbot-credit"
+﻿name = "tgbotcredit"
 main = "index.js"
 compatibility_date = "2026-04-15"
 
-# Create KV with: wrangler kv namespace create CHAT_MODE_KV
-# Then fill the namespace id below.
+# Fill this with a real KV namespace id from your Cloudflare account.
 [[kv_namespaces]]
-binding = "CHAT_MODE_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+binding = "DB"
+id = "d6f69b40-6768-431d-a2a4-2233aa802bc7"

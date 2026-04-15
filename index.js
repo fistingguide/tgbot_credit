@@ -383,17 +383,20 @@ async function handleMessage(env, message, ctx) {
 				await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
 				return;
 			}
-			await tg(env, "sendMessage", {
-				chat_id: chatId,
-				text: formatRow(rows[0]),
-				parse_mode: "HTML",
-				disable_web_page_preview: true,
-			});
-		} catch (err) {
-			console.error(err);
-			await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
-		}
-		return;
+				const sent = await tg(env, "sendMessage", {
+					chat_id: chatId,
+					text: formatRow(rows[0]),
+					parse_mode: "HTML",
+					disable_web_page_preview: true,
+				});
+				if (isGroupChat(chat)) {
+					scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+				}
+			} catch (err) {
+				console.error(err);
+				await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
+			}
+			return;
 	}
 
 	const command = normalizeCommand(text);
@@ -427,27 +430,33 @@ async function handleMessage(env, message, ctx) {
 		// Silent fallback: try exact lookup without sending guidance text.
 		try {
 			const byX = await queryProfilesByX(env, text);
-			if (byX.length === 1) {
-				await tg(env, "sendMessage", {
-					chat_id: chatId,
-					text: formatRow(byX[0]),
-					parse_mode: "HTML",
-					disable_web_page_preview: true,
-				});
-				return;
-			}
-			const byTg = await queryProfilesByTelegram(env, text);
-			if (byTg.length === 1) {
-				await tg(env, "sendMessage", {
-					chat_id: chatId,
-					text: formatRow(byTg[0]),
-					parse_mode: "HTML",
-					disable_web_page_preview: true,
-				});
-				return;
-			}
-		} catch (err) {
-			console.error(err);
+				if (byX.length === 1) {
+					const sent = await tg(env, "sendMessage", {
+						chat_id: chatId,
+						text: formatRow(byX[0]),
+						parse_mode: "HTML",
+						disable_web_page_preview: true,
+					});
+					if (isGroupChat(chat)) {
+						scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+					}
+					return;
+				}
+				const byTg = await queryProfilesByTelegram(env, text);
+				if (byTg.length === 1) {
+					const sent = await tg(env, "sendMessage", {
+						chat_id: chatId,
+						text: formatRow(byTg[0]),
+						parse_mode: "HTML",
+						disable_web_page_preview: true,
+					});
+					if (isGroupChat(chat)) {
+						scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+					}
+					return;
+				}
+			} catch (err) {
+				console.error(err);
 		}
 		return;
 	}
@@ -462,12 +471,15 @@ async function handleMessage(env, message, ctx) {
 			await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
 			return;
 		}
-		await tg(env, "sendMessage", {
+		const sent = await tg(env, "sendMessage", {
 			chat_id: chatId,
 			text: formatRow(rows[0]),
 			parse_mode: "HTML",
 			disable_web_page_preview: true,
 		});
+		if (isGroupChat(chat)) {
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+		}
 	} catch (err) {
 		console.error(err);
 		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });

@@ -206,7 +206,7 @@ async function upsertCredit(env, message) {
 			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
 			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
 			"total_credit = " +
-			"(COALESCE(followers_count, 0) / 100.0) + " +
+			"(COALESCE(followers_count, 0) / 10.0) + " +
 			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) " +
@@ -232,7 +232,7 @@ async function upsertCredit(env, message) {
 			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
 			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
 			"total_credit = " +
-			"(COALESCE(followers_count, 0) / 100.0) + " +
+			"(COALESCE(followers_count, 0) / 10.0) + " +
 			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) " +
@@ -299,7 +299,7 @@ function formatMyCredit(row) {
 
 const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
 const TOTAL_CREDIT_SQL_EXPR =
-	"(COALESCE(CAST(followers_count AS REAL), 0) / 100.0) + " +
+	"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
 	"(COALESCE(tg_msg_cnt, 0) * 1) + " +
 	"(COALESCE(tg_photo_cnt, 0) * 2) + " +
 	"(COALESCE(tg_video_cnt, 0) * 10)";

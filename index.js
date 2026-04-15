@@ -288,6 +288,8 @@ function formatMyCredit(row) {
 	].join("\n");
 }
 
+const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
+
 async function sendAllCredit(env, chatId) {
 	const table = getProfilesTable(env);
 	const sql =
@@ -315,6 +317,14 @@ async function sendAllCredit(env, chatId) {
 
 async function sendMyCredit(env, chatId, userId, telegramUsername) {
 	const table = getProfilesTable(env);
+	const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
+	if (!normalizedTelegram) {
+		return tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
+		});
+	}
+
 	let row = await env.DB.prepare(
 		`SELECT ` +
 			"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
@@ -330,22 +340,26 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 		.first();
 
 	if (!row) {
-		const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
-		if (normalizedTelegram) {
-			row = await env.DB.prepare(
-				`SELECT ` +
-					"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
-					"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
-					"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
-					"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
-					"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
-					"COALESCE(tg_video_cnt, 0) AS video_count, " +
-					"COALESCE(total_credit, 0) AS star " +
-					`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
-			)
-				.bind(normalizedTelegram)
-				.first();
-		}
+		row = await env.DB.prepare(
+			`SELECT ` +
+				"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
+				"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
+				"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+				"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
+				"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
+				"COALESCE(tg_video_cnt, 0) AS video_count, " +
+				"COALESCE(total_credit, 0) AS star " +
+				`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
+		)
+			.bind(normalizedTelegram)
+			.first();
+	}
+
+	if (!row) {
+		return tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
+		});
 	}
 
 	return tg(env, "sendMessage", {

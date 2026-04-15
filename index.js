@@ -399,36 +399,7 @@ async function handleMessage(env, message) {
 
 	const mode = extractModeFromReply(message);
 	if (!mode) {
-		// Fallback when Telegram client didn't include reply_to_message:
-		// try both X and Telegram exact-match paths.
-		try {
-			const byX = await queryProfilesByX(env, text);
-			if (byX.length === 1) {
-				await tg(env, "sendMessage", {
-					chat_id: chatId,
-					text: formatRow(byX[0]),
-					parse_mode: "HTML",
-					disable_web_page_preview: true,
-				});
-				return;
-			}
-			const byTg = await queryProfilesByTelegram(env, text);
-			if (byTg.length === 1) {
-				await tg(env, "sendMessage", {
-					chat_id: chatId,
-					text: formatRow(byTg[0]),
-					parse_mode: "HTML",
-					disable_web_page_preview: true,
-				});
-				return;
-			}
-		} catch (err) {
-			console.error(err);
-		}
-		await tg(env, "sendMessage", {
-			chat_id: chatId,
-			text: "Send /query first to choose a method, or search directly with /x <handle> or /tg <username>.",
-		});
+		// Keep silent on non-command messages to avoid noisy auto-replies.
 		return;
 	}
 

@@ -11,7 +11,6 @@
  * - WEBHOOK_PATH (default: /webhook)
  * - TELEGRAM_WEBHOOK_SECRET (validate header x-telegram-bot-api-secret-token)
  * - PROFILE_TABLE (default: profiles)
- * - CREDIT_TABLE (default: group_user_credit)
  */
 
 function normalizeInput(value) {
@@ -47,14 +46,6 @@ function getProfilesTable(env) {
 	const table = String(env.PROFILE_TABLE || "profiles").trim();
 	if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
 		throw new Error("Invalid PROFILE_TABLE");
-	}
-	return table;
-}
-
-function getCreditTable(env) {
-	const table = String(env.CREDIT_TABLE || "group_user_credit").trim();
-	if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
-		throw new Error("Invalid CREDIT_TABLE");
 	}
 	return table;
 }
@@ -185,93 +176,13 @@ async function ensureProfilesSchema(env) {
 	};
 
 	await addColumnIfMissing("tg_user_id", "tg_user_id TEXT");
+	await addColumnIfMissing("telegram", "telegram TEXT");
+	await addColumnIfMissing("handle", "handle TEXT");
 	await addColumnIfMissing("tg_msg_cnt", "tg_msg_cnt INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("tg_photo_cnt", "tg_photo_cnt INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("tg_video_cnt", "tg_video_cnt INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("list_star_event_cnt", "list_star_event_cnt INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("total_credit", "total_credit INTEGER NOT NULL DEFAULT 0");
-}
-
-async function ensureCreditSchema(env) {
-	const table = getCreditTable(env);
-	await env.DB.prepare(
-		`CREATE TABLE IF NOT EXISTS ${table} (` +
-			"user_id TEXT NOT NULL PRIMARY KEY," +
-			"user_handle TEXT," +
-			"x_handle TEXT," +
-			"msg_count INTEGER NOT NULL DEFAULT 0," +
-			"photo_count INTEGER NOT NULL DEFAULT 0," +
-			"video_count INTEGER NOT NULL DEFAULT 0," +
-			"star INTEGER NOT NULL DEFAULT 0," +
-			"updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP" +
-			")"
-	).run();
-
-	const columnsResult = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
-	const existingColumns = new Set(
-		(Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || ""))
-	);
-	const hasUsername = existingColumns.has("username");
-
-	if (!existingColumns.has("user_handle")) {
-		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN user_handle TEXT`).run();
-	}
-	if (!existingColumns.has("x_handle")) {
-		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN x_handle TEXT`).run();
-	}
-	if (!existingColumns.has("star")) {
-		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN star INTEGER NOT NULL DEFAULT 0`).run();
-	}
-
-	if (hasUsername) {
-		await env.DB.prepare(
-			`UPDATE ${table} SET user_handle = TRIM(COALESCE(username, '')) ` +
-				"WHERE (user_handle IS NULL OR TRIM(user_handle) = '') AND TRIM(COALESCE(username, '')) <> ''"
-		).run();
-	}
-
-	if (existingColumns.has("list_star")) {
-		await env.DB.prepare(
-			`UPDATE ${table} SET star = COALESCE(list_star, COALESCE(msg_count, 0) + COALESCE(photo_count, 0) * 3 + COALESCE(video_count, 0) * 9) ` +
-				"WHERE COALESCE(star, 0) = 0"
-		).run();
-	} else {
-		await env.DB.prepare(
-			`UPDATE ${table} SET star = COALESCE(msg_count, 0) + COALESCE(photo_count, 0) * 3 + COALESCE(video_count, 0) * 9 ` +
-				"WHERE COALESCE(star, 0) = 0"
-		).run();
-	}
-}
-
-async function getCreditSchema(env) {
-	const table = getCreditTable(env);
-	const columnsResult = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
-	const columns = new Set((Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || "")));
-	return {
-		table,
-		hasChatId: columns.has("chat_id"),
-		hasUsername: columns.has("username"),
-		hasListStar: columns.has("list_star"),
-	};
-}
-
-async function resolveXHandle(env, userHandle) {
-	const normalized = normalizeInput(userHandle).toLowerCase();
-	if (!normalized) return "";
-	try {
-		const profilesTable = getProfilesTable(env);
-		const result = await env.DB.prepare(
-			`SELECT handle FROM ${profilesTable} ` +
-				"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? " +
-				"LIMIT 1"
-		)
-			.bind(normalized)
-			.first();
-		return String(result?.handle || "").trim();
-	} catch (err) {
-		console.error("resolveXHandle failed:", err);
-		return "";
-	}
 }
 
 async function upsertCredit(env, message) {
@@ -280,44 +191,52 @@ async function upsertCredit(env, message) {
 
 	const { msgCount, photoCount, videoCount, star } = buildIncrements(message);
 	if (msgCount === 0 && photoCount === 0 && videoCount === 0 && star === 0) return;
-	const userHandle = String(from.username || "").trim();
-	const xHandle = await resolveXHandle(env, userHandle);
+	const table = getProfilesTable(env);
+	const tgUserId = String(from.id);
+	const telegram = normalizeInput(from.username).toLowerCase();
+	const eventCnt = msgCount + photoCount + videoCount;
 
-	const schema = await getCreditSchema(env);
-	if (schema.hasChatId) {
-		const chatId = message?.chat?.id;
-		if (!chatId) return;
-		const sql =
-			`INSERT INTO ${schema.table} ` +
-			"(chat_id, user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at) " +
-			"VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
-			"ON CONFLICT(chat_id, user_id) DO UPDATE SET " +
-			"user_handle = excluded.user_handle, " +
-			"x_handle = CASE WHEN TRIM(COALESCE(excluded.x_handle, '')) <> '' THEN excluded.x_handle ELSE x_handle END, " +
-			"msg_count = msg_count + excluded.msg_count, " +
-			"photo_count = photo_count + excluded.photo_count, " +
-			"video_count = video_count + excluded.video_count, " +
-			"star = star + excluded.star, " +
-			"updated_at = CURRENT_TIMESTAMP";
-		await env.DB.prepare(sql)
-			.bind(String(chatId), String(from.id), userHandle, xHandle, msgCount, photoCount, videoCount, star)
-			.run();
+	const updateByTgUserId = await env.DB.prepare(
+		`UPDATE ${table} SET ` +
+			"telegram = CASE " +
+			"WHEN TRIM(COALESCE(telegram, '')) = '' AND TRIM(COALESCE(?, '')) <> '' THEN ? " +
+			"ELSE telegram END, " +
+			"tg_user_id = ?, " +
+			"tg_msg_cnt = COALESCE(tg_msg_cnt, 0) + ?, " +
+			"tg_photo_cnt = COALESCE(tg_photo_cnt, 0) + ?, " +
+			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
+			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
+			"total_credit = COALESCE(total_credit, 0) + ? " +
+			"WHERE TRIM(COALESCE(tg_user_id, '')) = ?"
+	)
+		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, eventCnt, star, tgUserId)
+		.run();
+	const changedByUserId = Number(updateByTgUserId?.meta?.changes || 0);
+	if (changedByUserId > 0) return;
+
+	if (!telegram) {
+		console.warn(`skip credit update: no matching profile for tg_user_id=${tgUserId} and telegram is empty`);
 		return;
 	}
 
-	const sql =
-		`INSERT INTO ${schema.table} ` +
-		"(user_id, user_handle, x_handle, msg_count, photo_count, video_count, star, updated_at) " +
-		"VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
-		"ON CONFLICT(user_id) DO UPDATE SET " +
-		"user_handle = excluded.user_handle, " +
-		"x_handle = CASE WHEN TRIM(COALESCE(excluded.x_handle, '')) <> '' THEN excluded.x_handle ELSE x_handle END, " +
-		"msg_count = msg_count + excluded.msg_count, " +
-		"photo_count = photo_count + excluded.photo_count, " +
-		"video_count = video_count + excluded.video_count, " +
-		"star = star + excluded.star, " +
-		"updated_at = CURRENT_TIMESTAMP";
-	await env.DB.prepare(sql).bind(String(from.id), userHandle, xHandle, msgCount, photoCount, videoCount, star).run();
+	const updateByTelegram = await env.DB.prepare(
+		`UPDATE ${table} SET ` +
+			"tg_user_id = CASE " +
+			"WHEN TRIM(COALESCE(tg_user_id, '')) = '' THEN ? " +
+			"ELSE tg_user_id END, " +
+			"tg_msg_cnt = COALESCE(tg_msg_cnt, 0) + ?, " +
+			"tg_photo_cnt = COALESCE(tg_photo_cnt, 0) + ?, " +
+			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
+			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
+			"total_credit = COALESCE(total_credit, 0) + ? " +
+			"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ?"
+	)
+		.bind(tgUserId, msgCount, photoCount, videoCount, eventCnt, star, telegram)
+		.run();
+	const changedByTelegram = Number(updateByTelegram?.meta?.changes || 0);
+	if (changedByTelegram === 0) {
+		console.warn(`skip credit update: no matching profile for tg_user_id=${tgUserId}, telegram=${telegram}`);
+	}
 }
 
 function displayName(row) {
@@ -370,17 +289,19 @@ function formatMyCredit(row) {
 }
 
 async function sendAllCredit(env, chatId) {
-	const schema = await getCreditSchema(env);
-	const handleExpr = schema.hasUsername
-		? "COALESCE(MAX(NULLIF(TRIM(COALESCE(user_handle, '')), '')), MAX(NULLIF(TRIM(COALESCE(username, '')), '')))"
-		: "MAX(NULLIF(TRIM(COALESCE(user_handle, '')), ''))";
-	const starExpr = schema.hasListStar ? "COALESCE(star, list_star, 0)" : "COALESCE(star, 0)";
+	const table = getProfilesTable(env);
 	const sql =
-		`SELECT user_id, ${handleExpr} AS user_handle, MAX(NULLIF(TRIM(COALESCE(x_handle, '')), '')) AS x_handle, ` +
-		`SUM(COALESCE(msg_count, 0)) AS msg_count, SUM(COALESCE(photo_count, 0)) AS photo_count, ` +
-		`SUM(COALESCE(video_count, 0)) AS video_count, SUM(${starExpr}) AS star, MAX(updated_at) AS updated_at ` +
-		`FROM ${schema.table} GROUP BY user_id ` +
-		"ORDER BY star DESC, updated_at DESC " +
+		`SELECT ` +
+		"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
+		"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
+		"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+		"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
+		"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
+		"COALESCE(tg_video_cnt, 0) AS video_count, " +
+		"COALESCE(total_credit, 0) AS star " +
+		`FROM ${table} ` +
+		"WHERE COALESCE(tg_msg_cnt, 0) > 0 OR COALESCE(tg_photo_cnt, 0) > 0 OR COALESCE(tg_video_cnt, 0) > 0 OR COALESCE(total_credit, 0) > 0 " +
+		"ORDER BY star DESC, COALESCE(list_star_event_cnt, 0) DESC, msg_count DESC " +
 		"LIMIT 50";
 	const result = await env.DB.prepare(sql).all();
 	const rows = Array.isArray(result?.results) ? result.results : [];
@@ -392,20 +313,41 @@ async function sendAllCredit(env, chatId) {
 	});
 }
 
-async function sendMyCredit(env, chatId, userId) {
-	const schema = await getCreditSchema(env);
-	const handleExpr = schema.hasUsername
-		? "COALESCE(MAX(NULLIF(TRIM(COALESCE(user_handle, '')), '')), MAX(NULLIF(TRIM(COALESCE(username, '')), '')))"
-		: "MAX(NULLIF(TRIM(COALESCE(user_handle, '')), ''))";
-	const starExpr = schema.hasListStar ? "COALESCE(star, list_star, 0)" : "COALESCE(star, 0)";
-	const row = await env.DB.prepare(
-		`SELECT user_id, ${handleExpr} AS user_handle, MAX(NULLIF(TRIM(COALESCE(x_handle, '')), '')) AS x_handle, ` +
-			`SUM(COALESCE(msg_count, 0)) AS msg_count, SUM(COALESCE(photo_count, 0)) AS photo_count, ` +
-			`SUM(COALESCE(video_count, 0)) AS video_count, SUM(${starExpr}) AS star, MAX(updated_at) AS updated_at ` +
-			`FROM ${schema.table} WHERE user_id = ? GROUP BY user_id LIMIT 1`
+async function sendMyCredit(env, chatId, userId, telegramUsername) {
+	const table = getProfilesTable(env);
+	let row = await env.DB.prepare(
+		`SELECT ` +
+			"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
+			"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
+			"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+			"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
+			"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
+			"COALESCE(tg_video_cnt, 0) AS video_count, " +
+			"COALESCE(total_credit, 0) AS star " +
+			`FROM ${table} WHERE TRIM(COALESCE(tg_user_id, '')) = ? LIMIT 1`
 	)
 		.bind(String(userId))
 		.first();
+
+	if (!row) {
+		const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
+		if (normalizedTelegram) {
+			row = await env.DB.prepare(
+				`SELECT ` +
+					"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
+					"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
+					"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+					"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
+					"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
+					"COALESCE(tg_video_cnt, 0) AS video_count, " +
+					"COALESCE(total_credit, 0) AS star " +
+					`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
+			)
+				.bind(normalizedTelegram)
+				.first();
+		}
+	}
+
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: formatMyCredit(row),
@@ -559,7 +501,7 @@ async function handleMessage(env, message, ctx) {
 	const isAlltgcreditCmd = command === "/alltgcredit" || command.startsWith("/alltgcredit@");
 
 	if (isMytgcreditCmd) {
-		const sent = await sendMyCredit(env, chatId, message?.from?.id);
+		const sent = await sendMyCredit(env, chatId, message?.from?.id, message?.from?.username);
 		if (isGroupChat(chat)) {
 			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
 			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
@@ -661,10 +603,8 @@ export default {
 				throw new Error("Missing D1 binding: DB");
 			}
 			getProfilesTable(env);
-			getCreditTable(env);
 			await env.DB.prepare("SELECT 1").first();
 			await ensureProfilesSchema(env);
-			await ensureCreditSchema(env);
 		} catch (err) {
 			console.error(err);
 			return new Response(`Config error: ${String(err?.message || err)}`, { status: 500 });

@@ -298,6 +298,11 @@ function formatMyCredit(row) {
 }
 
 const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
+const TOTAL_CREDIT_SQL_EXPR =
+	"(COALESCE(CAST(followers_count AS REAL), 0) / 100.0) + " +
+	"(COALESCE(tg_msg_cnt, 0) * 1) + " +
+	"(COALESCE(tg_photo_cnt, 0) * 2) + " +
+	"(COALESCE(tg_video_cnt, 0) * 10)";
 
 async function sendAllCredit(env, chatId) {
 	const table = getProfilesTable(env);
@@ -309,7 +314,7 @@ async function sendAllCredit(env, chatId) {
 		"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 		"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 		"COALESCE(tg_video_cnt, 0) AS video_count, " +
-		"COALESCE(total_credit, 0) AS star " +
+		`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
 		`FROM ${table} ` +
 		"WHERE COALESCE(tg_msg_cnt, 0) > 0 OR COALESCE(tg_photo_cnt, 0) > 0 OR COALESCE(tg_video_cnt, 0) > 0 OR COALESCE(total_credit, 0) > 0 " +
 		"ORDER BY star DESC, COALESCE(list_star_event_cnt, 0) DESC, msg_count DESC " +
@@ -343,7 +348,7 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 			"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 			"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 			"COALESCE(tg_video_cnt, 0) AS video_count, " +
-			"COALESCE(total_credit, 0) AS star " +
+			`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
 			`FROM ${table} WHERE TRIM(COALESCE(tg_user_id, '')) = ? LIMIT 1`
 	)
 		.bind(String(userId))
@@ -359,7 +364,7 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 				"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 				"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 				"COALESCE(tg_video_cnt, 0) AS video_count, " +
-				"COALESCE(total_credit, 0) AS star " +
+				`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
 				`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
 		)
 			.bind(normalizedTelegram)

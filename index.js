@@ -280,8 +280,9 @@ function formatMyCredit(row) {
 	if (!row) {
 		return "No credit record found for you yet.";
 	}
-	const name = escapeHtml(displayName(row));
-	const xHandle = escapeHtml(String(row?.x_handle || "").trim());
+	const name = escapeHtml(normalizeInput(row?.user_handle) || `User ${row?.user_id || "Unknown"}`);
+	const xHandle = escapeHtml(normalizeInput(row?.x_handle));
+	const followersCount = Number(row?.followers_count || 0);
 	const msg = Number(row?.msg_count || 0);
 	const photo = Number(row?.photo_count || 0);
 	const video = Number(row?.video_count || 0);
@@ -289,7 +290,8 @@ function formatMyCredit(row) {
 	return [
 		"<b>⭐ My Credit</b>",
 		"━━━━━━━━━━━━",
-		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>@${xHandle}</b>` : ""}`,
+		`🐦 <b>Followers</b>: <b>${followersCount}</b>`,
+		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>${xHandle}</b>` : ""}`,
 		`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	].join("\n");
@@ -337,6 +339,7 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 			"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
 			"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
 			"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+			"COALESCE(followers_count, 0) AS followers_count, " +
 			"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 			"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 			"COALESCE(tg_video_cnt, 0) AS video_count, " +
@@ -352,6 +355,7 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 				"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
 				"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
 				"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+				"COALESCE(followers_count, 0) AS followers_count, " +
 				"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 				"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 				"COALESCE(tg_video_cnt, 0) AS video_count, " +

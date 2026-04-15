@@ -11,6 +11,7 @@
  * - WEBHOOK_PATH (default: /webhook)
  * - TELEGRAM_WEBHOOK_SECRET (validate header x-telegram-bot-api-secret-token)
  * - PROFILE_TABLE (default: profiles)
+ * - CREDIT_TABLE (default: group_user_credit)
  */
 
 function normalizeInput(value) {
@@ -48,6 +49,35 @@ function getProfilesTable(env) {
 		throw new Error("Invalid PROFILE_TABLE");
 	}
 	return table;
+}
+
+function getCreditTable(env) {
+	const table = String(env.CREDIT_TABLE || "group_user_credit").trim();
+	if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
+		throw new Error("Invalid CREDIT_TABLE");
+	}
+	return table;
+}
+
+function normalizeCommand(text) {
+	if (!String(text || "").startsWith("/")) return "";
+	const firstToken = String(text || "").split(/\s+/, 1)[0].toLowerCase();
+	const atIndex = firstToken.indexOf("@");
+	return atIndex === -1 ? firstToken : firstToken.slice(0, atIndex);
+}
+
+function isGroupChat(chat) {
+	const t = String(chat?.type || "");
+	return t === "group" || t === "supergroup";
+}
+
+function buildIncrements(message) {
+	const text = String(message?.text || "").trim();
+	const isCreditCmd = normalizeCommand(text) === "/credit";
+	const msgCount = text && !isCreditCmd ? 1 : 0;
+	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
+	const videoCount = message?.video ? 1 : 0;
+	return { msgCount, photoCount, videoCount };
 }
 
 async function tg(env, method, payload) {
@@ -112,6 +142,108 @@ function parseModeCommand(text) {
 		mode: m[1].toLowerCase(),
 		value: String(m[2] || "").trim(),
 	};
+}
+
+async function ensureCreditSchema(env) {
+	const table = getCreditTable(env);
+	await env.DB.prepare(
+		`CREATE TABLE IF NOT EXISTS ${table} (` +
+			"chat_id TEXT NOT NULL," +
+			"user_id TEXT NOT NULL," +
+			"username TEXT," +
+			"first_name TEXT," +
+			"last_name TEXT," +
+			"msg_count INTEGER NOT NULL DEFAULT 0," +
+			"photo_count INTEGER NOT NULL DEFAULT 0," +
+			"video_count INTEGER NOT NULL DEFAULT 0," +
+			"updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+			"PRIMARY KEY (chat_id, user_id)" +
+			")"
+	).run();
+}
+
+async function upsertCredit(env, message) {
+	const chatId = message?.chat?.id;
+	const from = message?.from;
+	if (!chatId || !from?.id || from?.is_bot) return;
+
+	const { msgCount, photoCount, videoCount } = buildIncrements(message);
+	if (msgCount === 0 && photoCount === 0 && videoCount === 0) return;
+
+	const table = getCreditTable(env);
+	const sql =
+		`INSERT INTO ${table} ` +
+		"(chat_id, user_id, username, first_name, last_name, msg_count, photo_count, video_count, updated_at) " +
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
+		"ON CONFLICT(chat_id, user_id) DO UPDATE SET " +
+		"username = excluded.username, " +
+		"first_name = excluded.first_name, " +
+		"last_name = excluded.last_name, " +
+		"msg_count = msg_count + excluded.msg_count, " +
+		"photo_count = photo_count + excluded.photo_count, " +
+		"video_count = video_count + excluded.video_count, " +
+		"updated_at = CURRENT_TIMESTAMP";
+
+	await env.DB.prepare(sql)
+		.bind(
+			String(chatId),
+			String(from.id),
+			from.username || "",
+			from.first_name || "",
+			from.last_name || "",
+			msgCount,
+			photoCount,
+			videoCount
+		)
+		.run();
+}
+
+function displayName(row) {
+	const first = String(row?.first_name || "").trim();
+	const last = String(row?.last_name || "").trim();
+	const full = `${first} ${last}`.trim();
+	if (full) return full;
+	const username = String(row?.username || "").trim();
+	if (username) return `@${username}`;
+	return `User ${row?.user_id || "Unknown"}`;
+}
+
+function formatCredit(rows) {
+	if (!rows.length) {
+		return "No activity records found in this group yet.";
+	}
+
+	const lines = ["<b>📊 Group Credit Leaderboard</b>", "━━━━━━━━━━━━"];
+	for (let i = 0; i < rows.length; i += 1) {
+		const row = rows[i];
+		const name = escapeHtml(displayName(row));
+		const username = escapeHtml(String(row?.username || ""));
+		const msg = Number(row?.msg_count || 0);
+		const photo = Number(row?.photo_count || 0);
+		const video = Number(row?.video_count || 0);
+		const total = msg + photo + video;
+		lines.push(`${i + 1}. 👤 <b>${name}</b>${username ? ` (@${username})` : ""}`);
+		lines.push(`💬 Msg: <b>${msg}</b>   🖼️ Photo: <b>${photo}</b>   🎬 Video: <b>${video}</b>   ⭐ Total: <b>${total}</b>`);
+	}
+	lines.push("━━━━━━━━━━━━");
+	return lines.join("\n");
+}
+
+async function sendCredit(env, chatId) {
+	const table = getCreditTable(env);
+	const sql =
+		`SELECT user_id, username, first_name, last_name, msg_count, photo_count, video_count FROM ${table} ` +
+		"WHERE chat_id = ? " +
+		"ORDER BY (msg_count + photo_count + video_count) DESC, updated_at DESC " +
+		"LIMIT 50";
+	const result = await env.DB.prepare(sql).bind(String(chatId)).all();
+	const rows = Array.isArray(result?.results) ? result.results : [];
+
+	await tg(env, "sendMessage", {
+		chat_id: chatId,
+		text: formatCredit(rows),
+		parse_mode: "HTML",
+	});
 }
 
 async function queryProfilesByX(env, input) {
@@ -197,8 +329,13 @@ async function handleCallback(env, callbackQuery) {
 
 async function handleMessage(env, message) {
 	const chatId = message?.chat?.id;
+	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
 	if (!chatId || !text) return;
+
+	if (isGroupChat(chat)) {
+		await upsertCredit(env, message);
+	}
 
 	const modeCommand = parseModeCommand(text);
 	if (modeCommand) {
@@ -234,10 +371,20 @@ async function handleMessage(env, message) {
 		return;
 	}
 
-	const command = text.split(/\s+/)[0].toLowerCase();
+	const command = normalizeCommand(text);
 	const isStartCmd = command === "/start" || command.startsWith("/start@");
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
 	const isQueryCmd = command === "/query" || command.startsWith("/query@");
+	const isCreditCmd = command === "/credit" || command.startsWith("/credit@");
+
+	if (isCreditCmd) {
+		if (!isGroupChat(chat)) {
+			await tg(env, "sendMessage", { chat_id: chatId, text: "Use /credit inside a group chat." });
+			return;
+		}
+		await sendCredit(env, chatId);
+		return;
+	}
 
 	if (isStartCmd || isHelpCmd) {
 		await handleStart(env, chatId);
@@ -320,7 +467,9 @@ export default {
 				throw new Error("Missing D1 binding: DB");
 			}
 			getProfilesTable(env);
+			getCreditTable(env);
 			await env.DB.prepare("SELECT 1").first();
+			await ensureCreditSchema(env);
 		} catch (err) {
 			console.error(err);
 			return new Response(`Config error: ${String(err?.message || err)}`, { status: 500 });

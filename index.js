@@ -77,7 +77,8 @@ function buildIncrements(message) {
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
-	return { msgCount, photoCount, videoCount };
+	const listStar = msgCount + photoCount * 3 + videoCount * 9;
+	return { msgCount, photoCount, videoCount, listStar };
 }
 
 async function tg(env, method, payload) {
@@ -169,63 +170,112 @@ async function ensureCreditSchema(env) {
 	const table = getCreditTable(env);
 	await env.DB.prepare(
 		`CREATE TABLE IF NOT EXISTS ${table} (` +
-			"chat_id TEXT NOT NULL," +
-			"user_id TEXT NOT NULL," +
-			"username TEXT," +
-			"first_name TEXT," +
-			"last_name TEXT," +
+			"user_id TEXT NOT NULL PRIMARY KEY," +
+			"user_handle TEXT," +
 			"msg_count INTEGER NOT NULL DEFAULT 0," +
 			"photo_count INTEGER NOT NULL DEFAULT 0," +
 			"video_count INTEGER NOT NULL DEFAULT 0," +
-			"updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP," +
-			"PRIMARY KEY (chat_id, user_id)" +
+			"list_star INTEGER NOT NULL DEFAULT 0," +
+			"updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP" +
 			")"
 	).run();
+
+	const columnsResult = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
+	const existingColumns = new Set(
+		(Array.isArray(columnsResult?.results) ? columnsResult.results : []).map((row) => String(row?.name || ""))
+	);
+	const hasUsername = existingColumns.has("username");
+
+	if (!existingColumns.has("user_handle")) {
+		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN user_handle TEXT`).run();
+	}
+	if (!existingColumns.has("list_star")) {
+		await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN list_star INTEGER NOT NULL DEFAULT 0`).run();
+	}
+
+	if (hasUsername) {
+		await env.DB.prepare(
+			`UPDATE ${table} SET user_handle = TRIM(COALESCE(username, '')) ` +
+				"WHERE (user_handle IS NULL OR TRIM(user_handle) = '') AND TRIM(COALESCE(username, '')) <> ''"
+		).run();
+	}
+
+	await env.DB.prepare(
+		`UPDATE ${table} SET list_star = COALESCE(msg_count, 0) + COALESCE(photo_count, 0) * 3 + COALESCE(video_count, 0) * 9 ` +
+			"WHERE COALESCE(list_star, 0) = 0"
+	).run();
+
+	await env.DB.prepare(
+		`UPDATE ${table} ` +
+			"SET msg_count = (SELECT SUM(COALESCE(t2.msg_count, 0)) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+			"photo_count = (SELECT SUM(COALESCE(t2.photo_count, 0)) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+			"video_count = (SELECT SUM(COALESCE(t2.video_count, 0)) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+			"list_star = (SELECT SUM(COALESCE(t2.list_star, 0)) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+			"updated_at = (SELECT MAX(t2.updated_at) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), ` +
+			"user_handle = COALESCE((SELECT MAX(NULLIF(TRIM(COALESCE(t2.user_handle, '')), '')) FROM " +
+			`${table} t2 WHERE t2.user_id = ${table}.user_id), user_handle)`
+	).run();
+
+	await env.DB.prepare(
+		`DELETE FROM ${table} WHERE rowid NOT IN (` +
+			`SELECT MIN(rowid) FROM ${table} GROUP BY user_id` +
+			")"
+	).run();
+
+	await env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_user_id ON ${table}(user_id)`).run();
+
+	// Try to drop legacy columns in place when the runtime supports it.
+	for (const legacyColumn of ["chat_id", "first_name", "last_name", "username"]) {
+		if (existingColumns.has(legacyColumn)) {
+			try {
+				await env.DB.prepare(`ALTER TABLE ${table} DROP COLUMN ${legacyColumn}`).run();
+			} catch (err) {
+				console.warn(`Skip dropping column ${legacyColumn}:`, err);
+			}
+		}
+	}
 }
 
 async function upsertCredit(env, message) {
-	const chatId = message?.chat?.id;
 	const from = message?.from;
-	if (!chatId || !from?.id || from?.is_bot) return;
+	if (!from?.id || from?.is_bot) return;
 
-	const { msgCount, photoCount, videoCount } = buildIncrements(message);
-	if (msgCount === 0 && photoCount === 0 && videoCount === 0) return;
+	const { msgCount, photoCount, videoCount, listStar } = buildIncrements(message);
+	if (msgCount === 0 && photoCount === 0 && videoCount === 0 && listStar === 0) return;
 
 	const table = getCreditTable(env);
 	const sql =
 		`INSERT INTO ${table} ` +
-		"(chat_id, user_id, username, first_name, last_name, msg_count, photo_count, video_count, updated_at) " +
-		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
-		"ON CONFLICT(chat_id, user_id) DO UPDATE SET " +
-		"username = excluded.username, " +
-		"first_name = excluded.first_name, " +
-		"last_name = excluded.last_name, " +
+		"(user_id, user_handle, msg_count, photo_count, video_count, list_star, updated_at) " +
+		"VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) " +
+		"ON CONFLICT(user_id) DO UPDATE SET " +
+		"user_handle = excluded.user_handle, " +
 		"msg_count = msg_count + excluded.msg_count, " +
 		"photo_count = photo_count + excluded.photo_count, " +
 		"video_count = video_count + excluded.video_count, " +
+		"list_star = list_star + excluded.list_star, " +
 		"updated_at = CURRENT_TIMESTAMP";
 
 	await env.DB.prepare(sql)
 		.bind(
-			String(chatId),
 			String(from.id),
-			from.username || "",
-			from.first_name || "",
-			from.last_name || "",
+			String(from.username || "").trim(),
 			msgCount,
 			photoCount,
-			videoCount
+			videoCount,
+			listStar
 		)
 		.run();
 }
 
 function displayName(row) {
-	const first = String(row?.first_name || "").trim();
-	const last = String(row?.last_name || "").trim();
-	const full = `${first} ${last}`.trim();
-	if (full) return full;
-	const username = String(row?.username || "").trim();
-	if (username) return `@${username}`;
+	const userHandle = String(row?.user_handle || "").trim();
+	if (userHandle) return `@${userHandle}`;
 	return `User ${row?.user_id || "Unknown"}`;
 }
 
@@ -241,7 +291,7 @@ function formatCredit(rows) {
 		const msg = Number(row?.msg_count || 0);
 		const photo = Number(row?.photo_count || 0);
 		const video = Number(row?.video_count || 0);
-		const total = msg + photo * 3 + video * 9;
+		const total = Number(row?.list_star || 0);
 		lines.push(`${i + 1}. 👤 <b>${name}</b>`);
 		lines.push(`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>`);
 		if (i !== rows.length - 1) {
@@ -255,11 +305,10 @@ function formatCredit(rows) {
 async function sendCredit(env, chatId) {
 	const table = getCreditTable(env);
 	const sql =
-		`SELECT user_id, username, first_name, last_name, msg_count, photo_count, video_count FROM ${table} ` +
-		"WHERE chat_id = ? " +
-		"ORDER BY (msg_count + photo_count * 3 + video_count * 9) DESC, updated_at DESC " +
+		`SELECT user_id, user_handle, msg_count, photo_count, video_count, list_star, updated_at FROM ${table} ` +
+		"ORDER BY list_star DESC, updated_at DESC " +
 		"LIMIT 50";
-	const result = await env.DB.prepare(sql).bind(String(chatId)).all();
+	const result = await env.DB.prepare(sql).all();
 	const rows = Array.isArray(result?.results) ? result.results : [];
 
 	return tg(env, "sendMessage", {

@@ -50,6 +50,170 @@ function getProfilesTable(env) {
 	return table;
 }
 
+const SUPPORTED_LANGS = ["en", "zh-Hans", "zh-Hant", "ja", "ko", "es"];
+
+const I18N = {
+	choose_query_method: {
+		en: "Choose a query method:",
+		"zh-Hans": "请选择查询方式：",
+		"zh-Hant": "請選擇查詢方式：",
+		ja: "検索方法を選択してください：",
+		ko: "조회 방식을 선택하세요:",
+		es: "Elige un método de consulta:",
+	},
+	search_by_x: { en: "Search by X", "zh-Hans": "按X查询", "zh-Hant": "按X查詢", ja: "Xで検索", ko: "X로 조회", es: "Buscar por X" },
+	search_by_tg: {
+		en: "Search by Telegram",
+		"zh-Hans": "按Telegram查询",
+		"zh-Hant": "按Telegram查詢",
+		ja: "Telegramで検索",
+		ko: "Telegram으로 조회",
+		es: "Buscar por Telegram",
+	},
+	prompt_x: {
+		en: "[QUERY_MODE:x] Enter an X handle (e.g. @demo or demo)",
+		"zh-Hans": "[QUERY_MODE:x] 请输入X句柄（例如 @demo 或 demo）",
+		"zh-Hant": "[QUERY_MODE:x] 請輸入X句柄（例如 @demo 或 demo）",
+		ja: "[QUERY_MODE:x] Xハンドルを入力してください（例: @demo または demo）",
+		ko: "[QUERY_MODE:x] X 핸들을 입력하세요 (예: @demo 또는 demo)",
+		es: "[QUERY_MODE:x] Ingresa un handle de X (ej. @demo o demo)",
+	},
+	prompt_tg: {
+		en: "[QUERY_MODE:tg] Enter a Telegram username (e.g. @demo or demo)",
+		"zh-Hans": "[QUERY_MODE:tg] 请输入Telegram用户名（例如 @demo 或 demo）",
+		"zh-Hant": "[QUERY_MODE:tg] 請輸入Telegram用戶名（例如 @demo 或 demo）",
+		ja: "[QUERY_MODE:tg] Telegramユーザー名を入力してください（例: @demo または demo）",
+		ko: "[QUERY_MODE:tg] Telegram 사용자명을 입력하세요 (예: @demo 또는 demo)",
+		es: "[QUERY_MODE:tg] Ingresa un usuario de Telegram (ej. @demo o demo)",
+	},
+	profile_x_check_prompt: {
+		en: "[PROFILE_X_CHECK] Please reply with your X handle (e.g. @demo or demo)",
+		"zh-Hans": "[PROFILE_X_CHECK] 请回复你的X句柄（例如 @demo 或 demo）",
+		"zh-Hant": "[PROFILE_X_CHECK] 請回覆你的X句柄（例如 @demo 或 demo）",
+		ja: "[PROFILE_X_CHECK] あなたのXハンドルを返信してください（例: @demo または demo）",
+		ko: "[PROFILE_X_CHECK] 본인 X 핸들을 답장으로 입력하세요 (예: @demo 또는 demo)",
+		es: "[PROFILE_X_CHECK] Responde con tu handle de X (ej. @demo o demo)",
+	},
+	type_x_handle: { en: "Type your X handle", "zh-Hans": "输入你的X句柄", "zh-Hant": "輸入你的X句柄", ja: "Xハンドルを入力", ko: "X 핸들 입력", es: "Escribe tu handle de X" },
+	type_tg_username: { en: "Type Telegram username", "zh-Hans": "输入Telegram用户名", "zh-Hant": "輸入Telegram用戶名", ja: "Telegramユーザー名を入力", ko: "Telegram 사용자명 입력", es: "Escribe usuario de Telegram" },
+	send_me_to_start: { en: "Send /me to start searching.", "zh-Hans": "发送 /me 开始查询。", "zh-Hant": "發送 /me 開始查詢。", ja: "/me を送信して開始。", ko: "/me 를 보내 시작하세요.", es: "Envía /me para empezar." },
+	switch_x: { en: "Switched to X search", "zh-Hans": "已切换到X查询", "zh-Hant": "已切換到X查詢", ja: "X検索に切り替えました", ko: "X 조회로 전환됨", es: "Cambiado a búsqueda por X" },
+	switch_tg: { en: "Switched to Telegram search", "zh-Hans": "已切换到Telegram查询", "zh-Hant": "已切換到Telegram查詢", ja: "Telegram検索に切り替えました", ko: "Telegram 조회로 전환됨", es: "Cambiado a búsqueda por Telegram" },
+	usage_x: { en: "Usage: /x <handle>", "zh-Hans": "用法: /x <handle>", "zh-Hant": "用法: /x <handle>", ja: "使い方: /x <handle>", ko: "사용법: /x <handle>", es: "Uso: /x <handle>" },
+	usage_tg: { en: "Usage: /tg <username>", "zh-Hans": "用法: /tg <username>", "zh-Hant": "用法: /tg <username>", ja: "使い方: /tg <username>", ko: "사용법: /tg <username>", es: "Uso: /tg <username>" },
+	no_matching_account: { en: "No matching account found.", "zh-Hans": "未找到匹配账号。", "zh-Hant": "未找到匹配帳號。", ja: "一致するアカウントが見つかりません。", ko: "일치하는 계정을 찾을 수 없습니다.", es: "No se encontró una cuenta coincidente." },
+	multiple_matches: {
+		en: "Multiple matches found. Please provide a more specific account.",
+		"zh-Hans": "找到多个匹配，请提供更具体的账号。",
+		"zh-Hant": "找到多個匹配，請提供更具體的帳號。",
+		ja: "複数の候補が見つかりました。より具体的に指定してください。",
+		ko: "여러 결과가 있습니다. 더 구체적으로 입력하세요.",
+		es: "Se encontraron múltiples coincidencias. Proporciona una cuenta más específica.",
+	},
+	multiple_profiles_tg: {
+		en: "Multiple profiles found for your Telegram username. Please contact admin.",
+		"zh-Hans": "你的Telegram用户名匹配到多个档案，请联系管理员。",
+		"zh-Hant": "你的Telegram用戶名匹配到多個檔案，請聯繫管理員。",
+		ja: "Telegramユーザー名に複数のプロフィールが見つかりました。管理者に連絡してください。",
+		ko: "Telegram 사용자명으로 여러 프로필이 발견되었습니다. 관리자에게 문의하세요.",
+		es: "Se encontraron varios perfiles para tu usuario de Telegram. Contacta al administrador.",
+	},
+	multiple_profiles_x: {
+		en: "Multiple profiles found for this X handle. Please provide a more specific handle.",
+		"zh-Hans": "这个X句柄匹配到多个档案，请提供更具体的句柄。",
+		"zh-Hant": "這個X句柄匹配到多個檔案，請提供更具體的句柄。",
+		ja: "このXハンドルに複数のプロフィールが見つかりました。より具体的に入力してください。",
+		ko: "이 X 핸들로 여러 프로필이 발견되었습니다. 더 구체적으로 입력하세요.",
+		es: "Se encontraron varios perfiles para este handle de X. Proporciona uno más específico.",
+	},
+	no_profile_found_create: {
+		en: "No profile found. Please create your profile first.",
+		"zh-Hans": "未找到档案，请先创建档案。",
+		"zh-Hant": "未找到檔案，請先建立檔案。",
+		ja: "プロフィールが見つかりません。先にプロフィールを作成してください。",
+		ko: "프로필이 없습니다. 먼저 프로필을 생성하세요.",
+		es: "No se encontró perfil. Crea tu perfil primero.",
+	},
+	profile_exists_edit: {
+		en: "Your profile exists. Please update your profile information here.",
+		"zh-Hans": "你的档案已存在，请在这里更新档案信息。",
+		"zh-Hant": "你的檔案已存在，請在這裡更新檔案資訊。",
+		ja: "プロフィールは存在します。こちらでプロフィール情報を更新してください。",
+		ko: "프로필이 이미 있습니다. 여기서 프로필 정보를 수정하세요.",
+		es: "Tu perfil existe. Actualiza aquí la información de tu perfil.",
+	},
+	profile_exists_missing_tg: {
+		en: "Your profile exists, but Telegram username is missing. Please add your Telegram first.",
+		"zh-Hans": "你的档案已存在，但缺少Telegram用户名，请先补充。",
+		"zh-Hant": "你的檔案已存在，但缺少Telegram用戶名，請先補充。",
+		ja: "プロフィールは存在しますが、Telegramユーザー名がありません。先に追加してください。",
+		ko: "프로필은 있지만 Telegram 사용자명이 없습니다. 먼저 추가하세요.",
+		es: "Tu perfil existe, pero falta el usuario de Telegram. Agrégalo primero.",
+	},
+	create_my_profile: { en: "create my profile", "zh-Hans": "创建我的档案", "zh-Hant": "建立我的檔案", ja: "プロフィールを作成", ko: "프로필 만들기", es: "crear mi perfil" },
+	edit_my_profile: { en: "edit my profile", "zh-Hans": "编辑我的档案", "zh-Hant": "編輯我的檔案", ja: "プロフィールを編集", ko: "프로필 수정", es: "editar mi perfil" },
+	add_my_telegram: { en: "add my telegram", "zh-Hans": "添加我的Telegram", "zh-Hant": "添加我的Telegram", ja: "Telegramを追加", ko: "내 Telegram 추가", es: "agregar mi telegram" },
+	no_x_profiles_credit: {
+		en: "No X profiles with total credit found.",
+		"zh-Hans": "未找到有总积分的X档案。",
+		"zh-Hant": "未找到有總積分的X檔案。",
+		ja: "総クレジットのあるXプロフィールが見つかりません。",
+		ko: "총 크레딧이 있는 X 프로필이 없습니다.",
+		es: "No se encontraron perfiles de X con crédito total.",
+	},
+	fglist_title: { en: "FGList ({page}/{totalPages}):", "zh-Hans": "FGList ({page}/{totalPages})：", "zh-Hant": "FGList ({page}/{totalPages})：", ja: "FGList ({page}/{totalPages})：", ko: "FGList ({page}/{totalPages}):", es: "FGList ({page}/{totalPages}):" },
+	list_top_x: { en: "Ｘ Our X", "zh-Hans": "Ｘ 官方X", "zh-Hant": "Ｘ 官方X", ja: "Ｘ 公式X", ko: "Ｘ 공식 X", es: "Ｘ Nuestro X" },
+	list_top_website: { en: "🌐 Our Website", "zh-Hans": "🌐 官方网站", "zh-Hant": "🌐 官方網站", ja: "🌐 公式サイト", ko: "🌐 웹사이트", es: "🌐 Nuestro sitio web" },
+	prev: { en: "⬅ Prev", "zh-Hans": "⬅ 上一页", "zh-Hant": "⬅ 上一頁", ja: "⬅ 前へ", ko: "⬅ 이전", es: "⬅ Anterior" },
+	next: { en: "Next ➡", "zh-Hans": "下一页 ➡", "zh-Hant": "下一頁 ➡", ja: "次へ ➡", ko: "다음 ➡", es: "Siguiente ➡" },
+	profile_title: { en: "<b>🔎FistingGuide Profile</b>", "zh-Hans": "<b>🔎FistingGuide Profile</b>", "zh-Hant": "<b>🔎FistingGuide Profile</b>", ja: "<b>🔎FistingGuide Profile</b>", ko: "<b>🔎FistingGuide Profile</b>", es: "<b>🔎FistingGuide Profile</b>" },
+	daily_updates: { en: "<b>Daily updates</b>", "zh-Hans": "<b>每日更新</b>", "zh-Hant": "<b>每日更新</b>", ja: "<b>毎日更新</b>", ko: "<b>매일 업데이트</b>", es: "<b>Actualizaciones diarias</b>" },
+	x_empty: { en: "𝕏 <b>X</b>: (empty)", "zh-Hans": "𝕏 <b>X</b>: （空）", "zh-Hant": "𝕏 <b>X</b>: （空）", ja: "𝕏 <b>X</b>: （空）", ko: "𝕏 <b>X</b>: (없음)", es: "𝕏 <b>X</b>: (vacío)" },
+	tg_empty: { en: "💬 <b>Telegram</b>: (empty)", "zh-Hans": "💬 <b>Telegram</b>: （空）", "zh-Hant": "💬 <b>Telegram</b>: （空）", ja: "💬 <b>Telegram</b>: （空）", ko: "💬 <b>Telegram</b>: (없음)", es: "💬 <b>Telegram</b>: (vacío)" },
+	location_label: { en: "Location", "zh-Hans": "地点", "zh-Hant": "地點", ja: "場所", ko: "위치", es: "Ubicación" },
+	bio_label: { en: "Bio", "zh-Hans": "简介", "zh-Hant": "簡介", ja: "自己紹介", ko: "소개", es: "Bio" },
+	profile_link_label: { en: "Profile", "zh-Hans": "档案", "zh-Hant": "檔案", ja: "プロフィール", ko: "프로필", es: "Perfil" },
+	credit_title: { en: "<b>⭐FistingGuide Credit</b>", "zh-Hans": "<b>⭐FistingGuide Credit</b>", "zh-Hant": "<b>⭐FistingGuide Credit</b>", ja: "<b>⭐FistingGuide Credit</b>", ko: "<b>⭐FistingGuide Credit</b>", es: "<b>⭐FistingGuide Credit</b>" },
+	liststar_event_credit: { en: "ListStar Event Credit", "zh-Hans": "ListStar活动积分", "zh-Hant": "ListStar活動積分", ja: "ListStarイベントクレジット", ko: "ListStar 이벤트 크레딧", es: "Crédito de evento ListStar" },
+	super_credit: { en: "Super Credit", "zh-Hans": "超级积分", "zh-Hant": "超級積分", ja: "スーパークレジット", ko: "슈퍼 크레딧", es: "Súper crédito" },
+	current_rank: { en: "Current Rank", "zh-Hans": "当前排名", "zh-Hant": "當前排名", ja: "現在の順位", ko: "현재 순위", es: "Rango actual" },
+	total_credit: { en: "Total Credit", "zh-Hans": "总积分", "zh-Hant": "總積分", ja: "総クレジット", ko: "총 크레딧", es: "Crédito total" },
+	website_btn: { en: "🌐 Website", "zh-Hans": "🌐 网站", "zh-Hant": "🌐 網站", ja: "🌐 サイト", ko: "🌐 웹사이트", es: "🌐 Sitio web" },
+	query_failed: { en: "Query failed. Please try again later.", "zh-Hans": "查询失败，请稍后再试。", "zh-Hant": "查詢失敗，請稍後再試。", ja: "検索に失敗しました。後でもう一度お試しください。", ko: "조회에 실패했습니다. 잠시 후 다시 시도하세요.", es: "La consulta falló. Inténtalo más tarde." },
+};
+
+function parseGroupIds(raw) {
+	return new Set(
+		String(raw || "")
+			.split(",")
+			.map((s) => s.trim())
+			.filter(Boolean)
+	);
+}
+
+function getChatLang(env, chatId) {
+	const id = String(chatId || "").trim();
+	if (!id) return "en";
+	const mapping = [
+		["zh-Hans", env.LANG_GROUPS_ZH_HANS],
+		["zh-Hant", env.LANG_GROUPS_ZH_HANT],
+		["ja", env.LANG_GROUPS_JA],
+		["ko", env.LANG_GROUPS_KO],
+		["es", env.LANG_GROUPS_ES],
+		["en", env.LANG_GROUPS_EN],
+	];
+	for (const [lang, raw] of mapping) {
+		if (parseGroupIds(raw).has(id)) return lang;
+	}
+	return "en";
+}
+
+function t(lang, key, vars = {}) {
+	const safeLang = SUPPORTED_LANGS.includes(lang) ? lang : "en";
+	const msg = I18N[key]?.[safeLang] || I18N[key]?.en || key;
+	return String(msg).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
+}
+
 function normalizeCommand(text) {
 	if (!String(text || "").startsWith("/")) return "";
 	const firstToken = String(text || "").split(/\s+/, 1)[0].toLowerCase();
@@ -88,39 +252,39 @@ async function tg(env, method, payload) {
 	return data.result;
 }
 
-async function sendModeButtons(env, chatId) {
+async function sendModeButtons(env, chatId, lang) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "Choose a query method:",
+		text: t(lang, "choose_query_method"),
 		reply_markup: {
 			inline_keyboard: [
 				[
-					{ text: "Search by X", callback_data: "mode_x" },
-					{ text: "Search by Telegram", callback_data: "mode_tg" },
+					{ text: t(lang, "search_by_x"), callback_data: "mode_x" },
+					{ text: t(lang, "search_by_tg"), callback_data: "mode_tg" },
 				],
 			],
 		},
 	});
 }
 
-function buildPrompt(mode) {
+function buildPrompt(mode, lang) {
 	if (mode === "x") {
-		return "[QUERY_MODE:x] Enter an X handle (e.g. @demo or demo)";
+		return t(lang, "prompt_x");
 	}
-	return "[QUERY_MODE:tg] Enter a Telegram username (e.g. @demo or demo)";
+	return t(lang, "prompt_tg");
 }
 
-function buildProfileXCheckPrompt() {
-	return "[PROFILE_X_CHECK] Please reply with your X handle (e.g. @demo or demo)";
+function buildProfileXCheckPrompt(lang) {
+	return t(lang, "profile_x_check_prompt");
 }
 
-async function askForInput(env, chatId, mode) {
+async function askForInput(env, chatId, mode, lang) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: buildPrompt(mode),
+		text: buildPrompt(mode, lang),
 		reply_markup: {
 			force_reply: true,
-			input_field_placeholder: mode === "x" ? "Type X handle" : "Type Telegram username",
+			input_field_placeholder: mode === "x" ? t(lang, "type_x_handle") : t(lang, "type_tg_username"),
 		},
 	});
 }
@@ -263,27 +427,27 @@ function formatCredit(rows) {
 
 function buildAllCreditKeyboard(rows) {
 	const safeRows = Array.isArray(rows) ? rows : [];
-	return buildAllCreditKeyboardByPage(safeRows, 0, safeRows.length, {}).reply_markup;
+	return buildAllCreditKeyboardByPage(safeRows, 0, safeRows.length, {}, "en").reply_markup;
 }
 
 const ALL_CREDIT_PAGE_SIZE = 10;
 
-function buildListTopButtons(env) {
+function buildListTopButtons(env, lang) {
 	const xUrl = normalizeUrl(env?.LIST_TOP_X_URL || env?.MY_X_URL || "https://x.com/FistingGuide");
 	const websiteUrl = normalizeUrl(env?.LIST_TOP_WEBSITE_URL || env?.WEBSITE_URL || "https://www.fisting.guide");
 	return [
-		{ text: "Ｘ Our X", url: xUrl },
-		{ text: "🌐 Our Website ", url: websiteUrl },
+		{ text: t(lang, "list_top_x"), url: xUrl },
+		{ text: t(lang, "list_top_website"), url: websiteUrl },
 	];
 }
 
-function buildAllCreditKeyboardByPage(rows, page, totalRows, env) {
+function buildAllCreditKeyboardByPage(rows, page, totalRows, env, lang) {
 	const safeRows = Array.isArray(rows) ? rows : [];
 	const safeTotalRows = Math.max(0, Number(totalRows || 0));
 	const totalPages = Math.max(1, Math.ceil(safeTotalRows / ALL_CREDIT_PAGE_SIZE));
 	const safePage = Math.max(0, Math.min(Number(page || 0), totalPages - 1));
 
-	const inline_keyboard = [buildListTopButtons(env)];
+	const inline_keyboard = [buildListTopButtons(env, lang)];
 	let buttonRow = [];
 	for (let i = 0; i < safeRows.length; i += 1) {
 		const row = safeRows[i];
@@ -306,11 +470,11 @@ function buildAllCreditKeyboardByPage(rows, page, totalRows, env) {
 	if (totalPages > 1) {
 		const navRow = [];
 		if (safePage > 0) {
-			navRow.push({ text: "⬅ Prev", callback_data: `credit_page:${safePage - 1}` });
+			navRow.push({ text: t(lang, "prev"), callback_data: `credit_page:${safePage - 1}` });
 		}
 		navRow.push({ text: `${safePage + 1}/${totalPages}`, callback_data: "credit_page:noop" });
 		if (safePage < totalPages - 1) {
-			navRow.push({ text: "Next ➡", callback_data: `credit_page:${safePage + 1}` });
+			navRow.push({ text: t(lang, "next"), callback_data: `credit_page:${safePage + 1}` });
 		}
 		inline_keyboard.push(navRow);
 	}
@@ -347,9 +511,9 @@ async function queryAllCreditRowsByPage(env, page) {
 	return Array.isArray(result?.results) ? result.results : [];
 }
 
-function formatMyCredit(row) {
+function formatMyCredit(row, lang) {
 	if (!row) {
-		return "No credit record found for you yet.";
+		return t(lang, "no_matching_account");
 	}
 	const name = escapeHtml(normalizeInput(row?.user_handle) || `User ${row?.user_id || "Unknown"}`);
 	const xHandle = escapeHtml(normalizeInput(row?.x_handle));
@@ -363,12 +527,12 @@ function formatMyCredit(row) {
 	const totalRows = Number(row?.total_rows || 0);
 	const total = Number(row?.star || 0);
 	return [
-		"<b>⭐FistingGuide Credit</b>",
+		t(lang, "credit_title"),
 		"━━━━━━━━━━━━",
 		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>${xHandle}</b>` : ""}`,
 		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
-		`🎯ListStar Event Credit <b>${listStarEventCnt}</b> ⚡Super Credit <b>${superCredit}</b>`,
-		`🏆Current Rank <b>${rank}</b>/<b>${totalRows}</b>   ⭐Total Credit <b>${total}</b>`,
+		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
+		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	].join("\n");
 }
@@ -380,7 +544,7 @@ function normalizeUrl(value) {
 	return `https://${raw}`;
 }
 
-function buildMyProfileButtons(profileRow, creditRow, env) {
+function buildMyProfileButtons(profileRow, creditRow, env, lang) {
 	const xHandle = normalizeInput(profileRow?.handle || creditRow?.x_handle);
 	const xUrl = xHandle ? `https://x.com/${encodeURIComponent(xHandle)}` : "";
 
@@ -391,11 +555,11 @@ function buildMyProfileButtons(profileRow, creditRow, env) {
 
 	const row = [];
 	if (xUrl) row.push({ text: "Ｘ", url: xUrl });
-	if (websiteUrl) row.push({ text: "🌐 Website", url: websiteUrl });
+	if (websiteUrl) row.push({ text: t(lang, "website_btn"), url: websiteUrl });
 	return row.length > 0 ? { inline_keyboard: [row] } : undefined;
 }
 
-function formatMeCombined(profileRow, creditRow) {
+function formatMeCombined(profileRow, creditRow, lang) {
 	const profileName = escapeHtml(profileRow?.name || "Unnamed");
 	const xHandle = escapeHtml(normalizeInput(profileRow?.handle || creditRow?.x_handle));
 	const telegram = escapeHtml(normalizeInput(profileRow?.telegram || creditRow?.user_handle));
@@ -415,19 +579,20 @@ function formatMeCombined(profileRow, creditRow) {
 	const total = Number(creditRow?.star || 0);
 
 	return [
-		"<b>🔎FistingGuide Profile</b>",
+		t(lang, "profile_title"),
+		t(lang, "daily_updates"),
 		"━━━━━━━━━━━━",
 		`👤 <b>${profileName}</b>`,
-		xHandle ? `𝕏 <b>X</b>: @${xHandle}` : "𝕏 <b>X</b>: (empty)",
-		telegram ? `💬 <b>Telegram</b>: @${telegram}` : "💬 <b>Telegram</b>: (empty)",
-		`📍 <b>Location</b>: ${district} / ${region} / ${country}`,
-		bio ? `📝 <b>Bio</b>: ${bio}` : "",
+		xHandle ? `𝕏 <b>X</b>: @${xHandle}` : t(lang, "x_empty"),
+		telegram ? `💬 <b>Telegram</b>: @${telegram}` : t(lang, "tg_empty"),
+		`📍 <b>${t(lang, "location_label")}</b>: ${district} / ${region} / ${country}`,
+		bio ? `📝 <b>${t(lang, "bio_label")}</b>: ${bio}` : "",
 		"━━━━━━━━━━━━",
-		"<b>⭐FistingGuide Credit</b>",
+		t(lang, "credit_title"),
 		"━━━━━━━━━━━━",
 		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
-		`🎯ListStar Event Credit <b>${listStarEventCnt}</b> ⚡Super Credit <b>${superCredit}</b>`,
-		`🏆Current Rank <b>${rank}</b>/<b>${totalRows}</b>   ⭐Total Credit <b>${total}</b>`,
+		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
+		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	]
 		.filter(Boolean)
@@ -444,32 +609,32 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"COALESCE(list_star_event_cnt, 0) + " +
 	"COALESCE(super_credit, 0)";
 
-async function sendAskXHandleForProfile(env, chatId) {
+async function sendAskXHandleForProfile(env, chatId, lang) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: buildProfileXCheckPrompt(),
+		text: buildProfileXCheckPrompt(lang),
 		reply_markup: {
 			force_reply: true,
-			input_field_placeholder: "Type your X handle",
+			input_field_placeholder: t(lang, "type_x_handle"),
 		},
 	});
 }
 
-async function sendProfileActionByXHandle(env, chatId, xHandleInput) {
+async function sendProfileActionByXHandle(env, chatId, xHandleInput, lang) {
 	const rows = await queryProfilesByX(env, xHandleInput);
 	if (rows.length > 1) {
 		return tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: "Multiple profiles found for this X handle. Please provide a more specific handle.",
+			text: t(lang, "multiple_profiles_x"),
 		});
 	}
 
 	if (rows.length === 0) {
 		return tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: "No profile found. Please create your profile first.",
+			text: t(lang, "no_profile_found_create"),
 			reply_markup: {
-				inline_keyboard: [[{ text: "create my profile", url: PROFILE_CREATE_URL }]],
+				inline_keyboard: [[{ text: t(lang, "create_my_profile"), url: PROFILE_CREATE_URL }]],
 			},
 		});
 	}
@@ -479,13 +644,13 @@ async function sendProfileActionByXHandle(env, chatId, xHandleInput) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: hasTelegram
-			? "Your profile exists. Please update your profile information here."
-			: "Your profile exists, but Telegram username is missing. Please add your Telegram first.",
+			? t(lang, "profile_exists_edit")
+			: t(lang, "profile_exists_missing_tg"),
 		reply_markup: {
 			inline_keyboard: [
 				[
 					{
-						text: hasTelegram ? "edit my profile" : "add my telegram",
+						text: hasTelegram ? t(lang, "edit_my_profile") : t(lang, "add_my_telegram"),
 						url: PROFILE_EDIT_URL,
 					},
 				],
@@ -494,20 +659,20 @@ async function sendProfileActionByXHandle(env, chatId, xHandleInput) {
 	});
 }
 
-async function sendAllCredit(env, chatId) {
+async function sendAllCredit(env, chatId, lang) {
 	const totalRows = await queryAllCreditCount(env);
 	if (totalRows === 0) {
 		return tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: "No X profiles with total credit found.",
+			text: t(lang, "no_x_profiles_credit"),
 		});
 	}
 	const rows = await queryAllCreditRowsByPage(env, 0);
-	const paged = buildAllCreditKeyboardByPage(rows, 0, totalRows, env);
+	const paged = buildAllCreditKeyboardByPage(rows, 0, totalRows, env, lang);
 
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: `FGList  (${paged.page + 1}/${paged.totalPages}):`,
+		text: t(lang, "fglist_title", { page: paged.page + 1, totalPages: paged.totalPages }),
 		reply_markup: paged.reply_markup,
 	});
 }
@@ -560,14 +725,14 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 	return row || null;
 }
 
-async function sendMyCredit(env, chatId, userId, telegramUsername) {
+async function sendMyCredit(env, chatId, userId, telegramUsername, lang) {
 	const row = await queryMyCreditRow(env, userId, telegramUsername);
 	if (!row) {
-		return sendAskXHandleForProfile(env, chatId);
+		return sendAskXHandleForProfile(env, chatId, lang);
 	}
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: formatMyCredit(row),
+		text: formatMyCredit(row, lang),
 		parse_mode: "HTML",
 	});
 }
@@ -598,7 +763,7 @@ async function queryProfilesByTelegram(env, input) {
 	return Array.isArray(result?.results) ? result.results : [];
 }
 
-function formatRow(row) {
+function formatRow(row, lang) {
 	const name = escapeHtml(row?.name || "Unnamed");
 	const handle = escapeHtml(row?.handle || "");
 	const telegram = escapeHtml(row?.telegram || "");
@@ -609,61 +774,62 @@ function formatRow(row) {
 	const profileUrl = escapeHtml(row?.profile_url || "");
 
 	const lines = [
-		"<b>🔎FistingGuide Profile</b>",
+		t(lang, "profile_title"),
+		t(lang, "daily_updates"),
 		"━━━━━━━━━━━━",
 		`👤 <b>${name}</b>`,
-		handle ? `𝕏 <b>X</b>: @${handle}` : "𝕏 <b>X</b>: (empty)",
-		telegram ? `💬 <b>Telegram</b>: @${telegram}` : "💬 <b>Telegram</b>: (empty)",
-		`📍 <b>Location</b>: ${district} / ${region} / ${country}`,
-		profileUrl ? `🔗 <b>Profile</b>: ${profileUrl}` : "",
-		bio ? `📝 <b>Bio</b>: ${bio}` : "",
+		handle ? `𝕏 <b>X</b>: @${handle}` : t(lang, "x_empty"),
+		telegram ? `💬 <b>Telegram</b>: @${telegram}` : t(lang, "tg_empty"),
+		`📍 <b>${t(lang, "location_label")}</b>: ${district} / ${region} / ${country}`,
+		profileUrl ? `🔗 <b>${t(lang, "profile_link_label")}</b>: ${profileUrl}` : "",
+		bio ? `📝 <b>${t(lang, "bio_label")}</b>: ${bio}` : "",
 		"━━━━━━━━━━━━",
 	].filter(Boolean);
 	return lines.join("\n");
 }
 
-async function handleStart(env, chatId) {
+async function handleStart(env, chatId, lang) {
 	await tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "Send /me to start searching.",
+		text: t(lang, "send_me_to_start"),
 	});
 }
 
-async function handleMyProfile(env, message, ctx) {
+async function handleMyProfile(env, message, ctx, lang) {
 	const chatId = message?.chat?.id;
 	const chat = message?.chat;
 	const telegramUsername = normalizeInput(message?.from?.username).toLowerCase();
 	if (!chatId) return;
 
 	if (!telegramUsername) {
-		await sendAskXHandleForProfile(env, chatId);
+		await sendAskXHandleForProfile(env, chatId, lang);
 		return;
 	}
 
 	try {
 		const rows = await queryProfilesByTelegram(env, telegramUsername);
 		if (rows.length === 0) {
-			await sendAskXHandleForProfile(env, chatId);
+			await sendAskXHandleForProfile(env, chatId, lang);
 			return;
 		}
 		if (rows.length > 1) {
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: "Multiple profiles found for your Telegram username. Please contact admin.",
+				text: t(lang, "multiple_profiles_tg"),
 			});
 			return;
 		}
 		const creditRow = await queryMyCreditRow(env, message?.from?.id, message?.from?.username);
-		const sent = await tg(env, "sendMessage", {
+		await tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: formatMeCombined(rows[0], creditRow),
+			text: formatMeCombined(rows[0], creditRow, lang),
 			parse_mode: "HTML",
 			disable_web_page_preview: true,
-			reply_markup: buildMyProfileButtons(rows[0], creditRow, env),
+			reply_markup: buildMyProfileButtons(rows[0], creditRow, env, lang),
 		});
 	} catch (err) {
 		console.error(err);
-		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
+		await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
 	}
 }
 
@@ -672,16 +838,17 @@ async function handleCallback(env, callbackQuery) {
 	const messageId = callbackQuery?.message?.message_id;
 	const data = String(callbackQuery?.data || "");
 	if (!chatId) return;
+	const lang = getChatLang(env, chatId);
 
 	if (data === "mode_x") {
-		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "Switched to X search" });
-		await askForInput(env, chatId, "x");
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: t(lang, "switch_x") });
+		await askForInput(env, chatId, "x", lang);
 		return;
 	}
 
 	if (data === "mode_tg") {
-		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "Switched to Telegram search" });
-		await askForInput(env, chatId, "tg");
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: t(lang, "switch_tg") });
+		await askForInput(env, chatId, "tg", lang);
 		return;
 	}
 
@@ -697,12 +864,12 @@ async function handleCallback(env, callbackQuery) {
 		const totalPages = Math.max(1, Math.ceil(totalRows / ALL_CREDIT_PAGE_SIZE));
 		const safePage = Math.max(0, Math.min(targetPage, totalPages - 1));
 		const rows = await queryAllCreditRowsByPage(env, safePage);
-		const paged = buildAllCreditKeyboardByPage(rows, safePage, totalRows, env);
+		const paged = buildAllCreditKeyboardByPage(rows, safePage, totalRows, env, lang);
 		if (messageId && paged.reply_markup) {
 			await tg(env, "editMessageText", {
 				chat_id: chatId,
 				message_id: messageId,
-				text: `FGList (${paged.page + 1}/${paged.totalPages}):`,
+				text: t(lang, "fglist_title", { page: paged.page + 1, totalPages: paged.totalPages }),
 				reply_markup: paged.reply_markup,
 			});
 		}
@@ -718,6 +885,7 @@ async function handleMessage(env, message, ctx) {
 	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
 	if (!chatId) return;
+	const lang = getChatLang(env, chatId);
 
 	if (isGroupChat(chat)) {
 		try {
@@ -735,7 +903,7 @@ async function handleMessage(env, message, ctx) {
 		if (!input) {
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: modeCommand.mode === "x" ? "Usage: /x <handle>" : "Usage: /tg <username>",
+				text: modeCommand.mode === "x" ? t(lang, "usage_x") : t(lang, "usage_tg"),
 			});
 			return;
 		}
@@ -743,22 +911,22 @@ async function handleMessage(env, message, ctx) {
 			const rows =
 				modeCommand.mode === "x" ? await queryProfilesByX(env, input) : await queryProfilesByTelegram(env, input);
 			if (rows.length === 0) {
-				await tg(env, "sendMessage", { chat_id: chatId, text: "No matching account found." });
+				await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "no_matching_account") });
 				return;
 			}
 			if (rows.length > 1) {
-				await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
+				await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "multiple_matches") });
 				return;
 			}
 				await tg(env, "sendMessage", {
 					chat_id: chatId,
-					text: formatRow(rows[0]),
+					text: formatRow(rows[0], lang),
 					parse_mode: "HTML",
 					disable_web_page_preview: true,
 				});
 			} catch (err) {
 				console.error(err);
-				await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
+				await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
 			}
 			return;
 	}
@@ -766,14 +934,14 @@ async function handleMessage(env, message, ctx) {
 	if (isProfileXCheckReply(message)) {
 		const xInput = String(text || "").trim();
 		if (!xInput || xInput.startsWith("/")) {
-			await sendAskXHandleForProfile(env, chatId);
+			await sendAskXHandleForProfile(env, chatId, lang);
 			return;
 		}
 		try {
-			await sendProfileActionByXHandle(env, chatId, xInput);
+			await sendProfileActionByXHandle(env, chatId, xInput, lang);
 		} catch (err) {
 			console.error(err);
-			await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
+			await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
 		}
 		return;
 	}
@@ -785,16 +953,16 @@ async function handleMessage(env, message, ctx) {
 	const isListCmd = command === "/list" || command.startsWith("/list@");
 
 	if (isListCmd) {
-		await sendAllCredit(env, chatId);
+		await sendAllCredit(env, chatId, lang);
 		return;
 	}
 
 	if (isStartCmd || isHelpCmd) {
-		await handleStart(env, chatId);
+		await handleStart(env, chatId, lang);
 		return;
 	}
 	if (isMyprofileCmd) {
-		await handleMyProfile(env, message, ctx);
+		await handleMyProfile(env, message, ctx, lang);
 		return;
 	}
 
@@ -806,7 +974,7 @@ async function handleMessage(env, message, ctx) {
 				if (byX.length === 1) {
 					await tg(env, "sendMessage", {
 						chat_id: chatId,
-						text: formatRow(byX[0]),
+						text: formatRow(byX[0], lang),
 						parse_mode: "HTML",
 						disable_web_page_preview: true,
 					});
@@ -816,7 +984,7 @@ async function handleMessage(env, message, ctx) {
 				if (byTg.length === 1) {
 					await tg(env, "sendMessage", {
 						chat_id: chatId,
-						text: formatRow(byTg[0]),
+						text: formatRow(byTg[0], lang),
 						parse_mode: "HTML",
 						disable_web_page_preview: true,
 					});
@@ -831,22 +999,22 @@ async function handleMessage(env, message, ctx) {
 	try {
 		const rows = mode === "x" ? await queryProfilesByX(env, text) : await queryProfilesByTelegram(env, text);
 		if (rows.length === 0) {
-			await tg(env, "sendMessage", { chat_id: chatId, text: "No matching account found." });
+			await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "no_matching_account") });
 			return;
 		}
 		if (rows.length > 1) {
-			await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
+			await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "multiple_matches") });
 			return;
 		}
 		await tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: formatRow(rows[0]),
+			text: formatRow(rows[0], lang),
 			parse_mode: "HTML",
 			disable_web_page_preview: true,
 		});
 	} catch (err) {
 		console.error(err);
-		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
+		await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
 	}
 }
 

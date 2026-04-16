@@ -88,27 +88,6 @@ async function tg(env, method, payload) {
 	return data.result;
 }
 
-function delay(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function scheduleDeleteMessage(env, ctx, chatId, messageId, delayMs = 20000) {
-	if (!ctx || !chatId || !messageId) return;
-	ctx.waitUntil(
-		(async () => {
-			await delay(delayMs);
-			try {
-				await tg(env, "deleteMessage", {
-					chat_id: chatId,
-					message_id: messageId,
-				});
-			} catch (err) {
-				console.error("deleteMessage failed:", err);
-			}
-		})()
-	);
-}
-
 async function sendModeButtons(env, chatId) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -283,8 +262,8 @@ function buildListTopButtons(env) {
 	const xUrl = normalizeUrl(env?.LIST_TOP_X_URL || env?.MY_X_URL || "https://x.com/FistingGuide");
 	const websiteUrl = normalizeUrl(env?.LIST_TOP_WEBSITE_URL || env?.WEBSITE_URL || "https://www.fisting.guide");
 	return [
-		{ text: "𝕏 My X", url: xUrl },
-		{ text: "🌐 Website", url: websiteUrl },
+		{ text: "𝕏 Our X", url: xUrl },
+		{ text: "🌐 Our Website ", url: websiteUrl },
 	];
 }
 
@@ -621,10 +600,6 @@ async function handleMyProfile(env, message, ctx) {
 			disable_web_page_preview: true,
 			reply_markup: buildMyProfileButtons(rows[0], creditRow, env),
 		});
-		if (isGroupChat(chat)) {
-			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-		}
 	} catch (err) {
 		console.error(err);
 		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
@@ -711,15 +686,12 @@ async function handleMessage(env, message, ctx) {
 				await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
 				return;
 			}
-				const sent = await tg(env, "sendMessage", {
+				await tg(env, "sendMessage", {
 					chat_id: chatId,
 					text: formatRow(rows[0]),
 					parse_mode: "HTML",
 					disable_web_page_preview: true,
 				});
-				if (isGroupChat(chat)) {
-					scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-				}
 			} catch (err) {
 				console.error(err);
 				await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
@@ -734,11 +706,7 @@ async function handleMessage(env, message, ctx) {
 	const isListCmd = command === "/list" || command.startsWith("/list@");
 
 	if (isListCmd) {
-		const sent = await sendAllCredit(env, chatId);
-		if (isGroupChat(chat)) {
-			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-		}
+		await sendAllCredit(env, chatId);
 		return;
 	}
 
@@ -757,28 +725,22 @@ async function handleMessage(env, message, ctx) {
 		try {
 			const byX = await queryProfilesByX(env, text);
 				if (byX.length === 1) {
-					const sent = await tg(env, "sendMessage", {
+					await tg(env, "sendMessage", {
 						chat_id: chatId,
 						text: formatRow(byX[0]),
 						parse_mode: "HTML",
 						disable_web_page_preview: true,
 					});
-					if (isGroupChat(chat)) {
-						scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-					}
 					return;
 				}
 				const byTg = await queryProfilesByTelegram(env, text);
 				if (byTg.length === 1) {
-					const sent = await tg(env, "sendMessage", {
+					await tg(env, "sendMessage", {
 						chat_id: chatId,
 						text: formatRow(byTg[0]),
 						parse_mode: "HTML",
 						disable_web_page_preview: true,
 					});
-					if (isGroupChat(chat)) {
-						scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-					}
 					return;
 				}
 			} catch (err) {
@@ -797,15 +759,12 @@ async function handleMessage(env, message, ctx) {
 			await tg(env, "sendMessage", { chat_id: chatId, text: "Multiple matches found. Please provide a more specific account." });
 			return;
 		}
-		const sent = await tg(env, "sendMessage", {
+		await tg(env, "sendMessage", {
 			chat_id: chatId,
 			text: formatRow(rows[0]),
 			parse_mode: "HTML",
 			disable_web_page_preview: true,
 		});
-		if (isGroupChat(chat)) {
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-		}
 	} catch (err) {
 		console.error(err);
 		await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });

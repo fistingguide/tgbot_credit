@@ -715,6 +715,20 @@ async function updateRankByTotalCredit(env) {
 	return Number(res?.meta?.changes || 0);
 }
 
+async function recalculateAllTotalCredit(env) {
+	const table = getProfilesTable(env);
+	const sql =
+		`UPDATE ${table} SET total_credit = ` +
+		"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
+		"(COALESCE(tg_msg_cnt, 0) * 1) + " +
+		"(COALESCE(tg_photo_cnt, 0) * 2) + " +
+		"(COALESCE(tg_video_cnt, 0) * 10) + " +
+		"COALESCE(list_star_event_cnt, 0) + " +
+		"COALESCE(super_credit, 0)";
+	const res = await env.DB.prepare(sql).run();
+	return Number(res?.meta?.changes || 0);
+}
+
 function formatMyCredit(row, lang) {
 	if (!row) {
 		return t(lang, "no_matching_account");
@@ -1215,10 +1229,11 @@ async function handleMessage(env, message, ctx) {
 			return;
 		}
 		try {
+			const recalculated = await recalculateAllTotalCredit(env);
 			const changed = await updateRankByTotalCredit(env);
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: `Rank update completed. Updated rows: ${changed}`,
+				text: `Update completed. Total credit recalculated: ${recalculated}; rank updated: ${changed}`,
 			});
 		} catch (err) {
 			console.error("updateRankByTotalCredit failed:", err);

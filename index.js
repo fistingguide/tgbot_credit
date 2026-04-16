@@ -274,19 +274,28 @@ function formatCredit(rows) {
 }
 
 function buildAllCreditKeyboard(rows) {
-	return buildAllCreditKeyboardByPage(rows, 0).reply_markup;
+	return buildAllCreditKeyboardByPage(rows, 0, {}).reply_markup;
 }
 
 const ALL_CREDIT_PAGE_SIZE = 10;
 
-function buildAllCreditKeyboardByPage(rows, page) {
+function buildListTopButtons(env) {
+	const xUrl = normalizeUrl(env?.LIST_TOP_X_URL || env?.MY_X_URL || "https://x.com/FistingGuide");
+	const websiteUrl = normalizeUrl(env?.LIST_TOP_WEBSITE_URL || env?.WEBSITE_URL || "https://www.fisting.guide");
+	return [
+		{ text: "𝕏 My X", url: xUrl },
+		{ text: "🌐 Website", url: websiteUrl },
+	];
+}
+
+function buildAllCreditKeyboardByPage(rows, page, env) {
 	const safeRows = Array.isArray(rows) ? rows : [];
 	const totalPages = Math.max(1, Math.ceil(safeRows.length / ALL_CREDIT_PAGE_SIZE));
 	const safePage = Math.max(0, Math.min(Number(page || 0), totalPages - 1));
 	const start = safePage * ALL_CREDIT_PAGE_SIZE;
 	const pageRows = safeRows.slice(start, start + ALL_CREDIT_PAGE_SIZE);
 
-	const inline_keyboard = [];
+	const inline_keyboard = [buildListTopButtons(env)];
 	let buttonRow = [];
 	for (let i = 0; i < pageRows.length; i += 1) {
 		const row = pageRows[i];
@@ -384,7 +393,7 @@ function buildMyProfileButtons(profileRow, creditRow, env) {
 	const websiteUrl = profileUrl && !isXProfileUrl ? profileUrl : fallbackWebsite;
 
 	const row = [];
-	if (xUrl) row.push({ text: "𝕏 My X", url: xUrl });
+	if (xUrl) row.push({ text: "𝕏", url: xUrl });
 	if (websiteUrl) row.push({ text: "🌐 Website", url: websiteUrl });
 	return row.length > 0 ? { inline_keyboard: [row] } : undefined;
 }
@@ -439,7 +448,7 @@ const TOTAL_CREDIT_SQL_EXPR =
 
 async function sendAllCredit(env, chatId) {
 	const rows = await queryAllCreditRows(env);
-	const paged = buildAllCreditKeyboardByPage(rows, 0);
+	const paged = buildAllCreditKeyboardByPage(rows, 0, env);
 	if (!paged.reply_markup) {
 		return tg(env, "sendMessage", {
 			chat_id: chatId,
@@ -449,7 +458,7 @@ async function sendAllCredit(env, chatId) {
 
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: `FGList www.fisting.guide (${paged.page + 1}/${paged.totalPages}):`,
+		text: `FGList  (${paged.page + 1}/${paged.totalPages}):`,
 		reply_markup: paged.reply_markup,
 	});
 }
@@ -649,12 +658,12 @@ async function handleCallback(env, callbackQuery) {
 		const rawPage = Number(data.split(":")[1]);
 		const targetPage = Number.isFinite(rawPage) ? rawPage : 0;
 		const rows = await queryAllCreditRows(env);
-		const paged = buildAllCreditKeyboardByPage(rows, targetPage);
+		const paged = buildAllCreditKeyboardByPage(rows, targetPage, env);
 		if (messageId && paged.reply_markup) {
 			await tg(env, "editMessageText", {
 				chat_id: chatId,
 				message_id: messageId,
-				text: `FGList www.fisting.guide (${paged.page + 1}/${paged.totalPages}):`,
+				text: `FGList (${paged.page + 1}/${paged.totalPages}):`,
 				reply_markup: paged.reply_markup,
 			});
 		}

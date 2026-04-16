@@ -209,10 +209,12 @@ async function upsertCredit(env, message) {
 			"(COALESCE(followers_count, 0) / 10.0) + " +
 			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
-			"((COALESCE(tg_video_cnt, 0) + ?) * 10) " +
+			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
+			"(COALESCE(list_star_event_cnt, 0) + ?) + " +
+			"COALESCE(super_credit, 0) " +
 			"WHERE TRIM(COALESCE(tg_user_id, '')) = ?"
 	)
-		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, tgUserId)
+		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, eventCnt, tgUserId)
 		.run();
 	const changedByUserId = Number(updateByTgUserId?.meta?.changes || 0);
 	if (changedByUserId > 0) return;
@@ -235,10 +237,12 @@ async function upsertCredit(env, message) {
 			"(COALESCE(followers_count, 0) / 10.0) + " +
 			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
-			"((COALESCE(tg_video_cnt, 0) + ?) * 10) " +
+			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
+			"(COALESCE(list_star_event_cnt, 0) + ?) + " +
+			"COALESCE(super_credit, 0) " +
 			"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ?"
 	)
-		.bind(tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, telegram)
+		.bind(tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, eventCnt, telegram)
 		.run();
 	const changedByTelegram = Number(updateByTelegram?.meta?.changes || 0);
 	if (changedByTelegram === 0) {
@@ -286,12 +290,18 @@ function formatMyCredit(row) {
 	const msg = Number(row?.msg_count || 0);
 	const photo = Number(row?.photo_count || 0);
 	const video = Number(row?.video_count || 0);
+	const listStarEventCnt = Number(row?.list_star_event_cnt || 0);
+	const superCredit = Number(row?.super_credit || 0);
+	const rank = Number(row?.rank_value || 0);
+	const totalRows = Number(row?.total_rows || 0);
 	const total = Number(row?.star || 0);
 	return [
 		"<b>⭐ My Credit</b>",
 		"━━━━━━━━━━━━",
 		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>${xHandle}</b>` : ""}`,
-		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b> ⭐<b>${total}</b>`,
+		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
+		`🎯ListStar Event Credit <b>${listStarEventCnt}</b> ⚡Super Credit <b>${superCredit}</b>`,
+		`🏆Current Rank <b>${rank}</b>/<b>${totalRows}</b>   ⭐Total Credit <b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	].join("\n");
 }
@@ -301,7 +311,9 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
 	"(COALESCE(tg_msg_cnt, 0) * 1) + " +
 	"(COALESCE(tg_photo_cnt, 0) * 2) + " +
-	"(COALESCE(tg_video_cnt, 0) * 10)";
+	"(COALESCE(tg_video_cnt, 0) * 10) + " +
+	"COALESCE(list_star_event_cnt, 0) + " +
+	"COALESCE(super_credit, 0)";
 
 async function sendAllCredit(env, chatId) {
 	const table = getProfilesTable(env);
@@ -347,6 +359,10 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 			"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 			"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 			"COALESCE(tg_video_cnt, 0) AS video_count, " +
+			"COALESCE(list_star_event_cnt, 0) AS list_star_event_cnt, " +
+			"COALESCE(super_credit, 0) AS super_credit, " +
+			'COALESCE("rank", 0) AS rank_value, ' +
+			`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
 			`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
 			`FROM ${table} WHERE TRIM(COALESCE(tg_user_id, '')) = ? LIMIT 1`
 	)
@@ -363,6 +379,10 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 				"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
 				"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
 				"COALESCE(tg_video_cnt, 0) AS video_count, " +
+				"COALESCE(list_star_event_cnt, 0) AS list_star_event_cnt, " +
+				"COALESCE(super_credit, 0) AS super_credit, " +
+				'COALESCE("rank", 0) AS rank_value, ' +
+				`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
 				`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
 				`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
 		)

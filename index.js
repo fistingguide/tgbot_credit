@@ -367,6 +367,67 @@ function formatMyCredit(row) {
 	].join("\n");
 }
 
+function normalizeUrl(value) {
+	const raw = String(value || "").trim();
+	if (!raw) return "";
+	if (/^https?:\/\//i.test(raw)) return raw;
+	return `https://${raw}`;
+}
+
+function buildMyProfileButtons(profileRow, creditRow, env) {
+	const xHandle = normalizeInput(profileRow?.handle || creditRow?.x_handle);
+	const xUrl = xHandle ? `https://x.com/${encodeURIComponent(xHandle)}` : "";
+
+	const profileUrl = normalizeUrl(profileRow?.profile_url);
+	const isXProfileUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(profileUrl);
+	const fallbackWebsite = normalizeUrl(env.MY_WEBSITE_URL || env.WEBSITE_URL || "https://www.fisting.guide");
+	const websiteUrl = profileUrl && !isXProfileUrl ? profileUrl : fallbackWebsite;
+
+	const row = [];
+	if (xUrl) row.push({ text: "𝕏 My X", url: xUrl });
+	if (websiteUrl) row.push({ text: "🌐 Website", url: websiteUrl });
+	return row.length > 0 ? { inline_keyboard: [row] } : undefined;
+}
+
+function formatMeCombined(profileRow, creditRow) {
+	const profileName = escapeHtml(profileRow?.name || "Unnamed");
+	const xHandle = escapeHtml(normalizeInput(profileRow?.handle || creditRow?.x_handle));
+	const telegram = escapeHtml(normalizeInput(profileRow?.telegram || creditRow?.user_handle));
+	const district = escapeHtml(profileRow?.district || profileRow?.city || "Unknown");
+	const region = escapeHtml(profileRow?.region || profileRow?.province || "Unknown");
+	const country = escapeHtml(profileRow?.country || "Unknown");
+	const bio = escapeHtml(profileRow?.bio || "");
+
+	const followersCount = Number(creditRow?.followers_count || 0);
+	const msg = Number(creditRow?.msg_count || 0);
+	const photo = Number(creditRow?.photo_count || 0);
+	const video = Number(creditRow?.video_count || 0);
+	const listStarEventCnt = Number(creditRow?.list_star_event_cnt || 0);
+	const superCredit = Number(creditRow?.super_credit || 0);
+	const rank = Number(creditRow?.rank_value || 0);
+	const totalRows = Number(creditRow?.total_rows || 0);
+	const total = Number(creditRow?.star || 0);
+
+	return [
+		"<b>🔎FistingGuide Profile</b>",
+		"━━━━━━━━━━━━",
+		`👤 <b>${profileName}</b>`,
+		xHandle ? `𝕏 <b>X</b>: @${xHandle}` : "𝕏 <b>X</b>: (empty)",
+		telegram ? `💬 <b>Telegram</b>: @${telegram}` : "💬 <b>Telegram</b>: (empty)",
+		`📍 <b>Location</b>: ${district} / ${region} / ${country}`,
+		bio ? `📝 <b>Bio</b>: ${bio}` : "",
+		"━━━━━━━━━━━━",
+		"<b>⭐FistingGuide Credit</b>",
+		"━━━━━━━━━━━━",
+		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
+		`🎯ListStar Event Credit <b>${listStarEventCnt}</b> ⚡Super Credit <b>${superCredit}</b>`,
+		`🏆Current Rank <b>${rank}</b>/<b>${totalRows}</b>   ⭐Total Credit <b>${total}</b>`,
+		"━━━━━━━━━━━━",
+	]
+		.filter(Boolean)
+		.join("\n");
+}
+
 const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
 const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
@@ -393,15 +454,10 @@ async function sendAllCredit(env, chatId) {
 	});
 }
 
-async function sendMyCredit(env, chatId, userId, telegramUsername) {
+async function queryMyCreditRow(env, userId, telegramUsername) {
 	const table = getProfilesTable(env);
 	const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
-	if (!normalizedTelegram) {
-		return tg(env, "sendMessage", {
-			chat_id: chatId,
-			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
-		});
-	}
+	if (!normalizedTelegram) return null;
 
 	let row = await env.DB.prepare(
 		`SELECT ` +
@@ -443,13 +499,17 @@ async function sendMyCredit(env, chatId, userId, telegramUsername) {
 			.first();
 	}
 
+	return row || null;
+}
+
+async function sendMyCredit(env, chatId, userId, telegramUsername) {
+	const row = await queryMyCreditRow(env, userId, telegramUsername);
 	if (!row) {
 		return tg(env, "sendMessage", {
 			chat_id: chatId,
 			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
 		});
 	}
-
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
 		text: formatMyCredit(row),
@@ -544,17 +604,17 @@ async function handleMyProfile(env, message, ctx) {
 			});
 			return;
 		}
-		const sentProfile = await tg(env, "sendMessage", {
+		const creditRow = await queryMyCreditRow(env, message?.from?.id, message?.from?.username);
+		const sent = await tg(env, "sendMessage", {
 			chat_id: chatId,
-			text: formatRow(rows[0]),
+			text: formatMeCombined(rows[0], creditRow),
 			parse_mode: "HTML",
 			disable_web_page_preview: true,
+			reply_markup: buildMyProfileButtons(rows[0], creditRow, env),
 		});
-		const sentCredit = await sendMyCredit(env, chatId, message?.from?.id, message?.from?.username);
 		if (isGroupChat(chat)) {
 			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
-			scheduleDeleteMessage(env, ctx, chatId, sentProfile?.message_id, 20000);
-			scheduleDeleteMessage(env, ctx, chatId, sentCredit?.message_id, 20000);
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
 		}
 	} catch (err) {
 		console.error(err);

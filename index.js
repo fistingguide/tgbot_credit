@@ -252,6 +252,27 @@ async function tg(env, method, payload) {
 	return data.result;
 }
 
+function delay(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function scheduleDeleteMessage(env, ctx, chatId, messageId, delayMs) {
+	if (!ctx || !chatId || !messageId || !Number.isFinite(delayMs) || delayMs <= 0) return;
+	ctx.waitUntil(
+		(async () => {
+			await delay(delayMs);
+			try {
+				await tg(env, "deleteMessage", {
+					chat_id: chatId,
+					message_id: messageId,
+				});
+			} catch (err) {
+				console.error("deleteMessage failed:", err);
+			}
+		})()
+	);
+}
+
 async function sendModeButtons(env, chatId, lang) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -601,6 +622,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 
 const PROFILE_EDIT_URL = "https://fisting.guide/admin/edit";
 const PROFILE_CREATE_URL = "https://fisting.guide/admin/create";
+const GROUP_REPLY_TTL_MS = 60 * 60 * 1000;
 const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
 	"(COALESCE(tg_msg_cnt, 0) * 1) + " +
@@ -802,25 +824,22 @@ async function handleMyProfile(env, message, ctx, lang) {
 	if (!chatId) return;
 
 	if (!telegramUsername) {
-		await sendAskXHandleForProfile(env, chatId, lang);
-		return;
+		return sendAskXHandleForProfile(env, chatId, lang);
 	}
 
 	try {
 		const rows = await queryProfilesByTelegram(env, telegramUsername);
 		if (rows.length === 0) {
-			await sendAskXHandleForProfile(env, chatId, lang);
-			return;
+			return sendAskXHandleForProfile(env, chatId, lang);
 		}
 		if (rows.length > 1) {
-			await tg(env, "sendMessage", {
+			return tg(env, "sendMessage", {
 				chat_id: chatId,
 				text: t(lang, "multiple_profiles_tg"),
 			});
-			return;
 		}
 		const creditRow = await queryMyCreditRow(env, message?.from?.id, message?.from?.username);
-		await tg(env, "sendMessage", {
+		return tg(env, "sendMessage", {
 			chat_id: chatId,
 			text: formatMeCombined(rows[0], creditRow, lang),
 			parse_mode: "HTML",
@@ -829,7 +848,7 @@ async function handleMyProfile(env, message, ctx, lang) {
 		});
 	} catch (err) {
 		console.error(err);
-		await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
+		return tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
 	}
 }
 
@@ -934,14 +953,23 @@ async function handleMessage(env, message, ctx) {
 	if (isProfileXCheckReply(message)) {
 		const xInput = String(text || "").trim();
 		if (!xInput || xInput.startsWith("/")) {
-			await sendAskXHandleForProfile(env, chatId, lang);
+			const sent = await sendAskXHandleForProfile(env, chatId, lang);
+			if (isGroupChat(chat)) {
+				scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
+			}
 			return;
 		}
 		try {
-			await sendProfileActionByXHandle(env, chatId, xInput, lang);
+			const sent = await sendProfileActionByXHandle(env, chatId, xInput, lang);
+			if (isGroupChat(chat)) {
+				scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
+			}
 		} catch (err) {
 			console.error(err);
-			await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
+			const sent = await tg(env, "sendMessage", { chat_id: chatId, text: t(lang, "query_failed") });
+			if (isGroupChat(chat)) {
+				scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
+			}
 		}
 		return;
 	}
@@ -953,7 +981,10 @@ async function handleMessage(env, message, ctx) {
 	const isListCmd = command === "/list" || command.startsWith("/list@");
 
 	if (isListCmd) {
-		await sendAllCredit(env, chatId, lang);
+		const sent = await sendAllCredit(env, chatId, lang);
+		if (isGroupChat(chat)) {
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
+		}
 		return;
 	}
 
@@ -962,7 +993,10 @@ async function handleMessage(env, message, ctx) {
 		return;
 	}
 	if (isMyprofileCmd) {
-		await handleMyProfile(env, message, ctx, lang);
+		const sent = await handleMyProfile(env, message, ctx, lang);
+		if (isGroupChat(chat)) {
+			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
+		}
 		return;
 	}
 

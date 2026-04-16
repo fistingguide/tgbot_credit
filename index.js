@@ -110,6 +110,10 @@ function buildPrompt(mode) {
 	return "[QUERY_MODE:tg] Enter a Telegram username (e.g. @demo or demo)";
 }
 
+function buildProfileXCheckPrompt() {
+	return "[PROFILE_X_CHECK] Please reply with your X handle (e.g. @demo or demo)";
+}
+
 async function askForInput(env, chatId, mode) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -125,6 +129,11 @@ function extractModeFromReply(message) {
 	const repliedText = String(message?.reply_to_message?.text || "");
 	const match = repliedText.match(/\[QUERY_MODE:(x|tg)\]/i);
 	return match ? match[1].toLowerCase() : "";
+}
+
+function isProfileXCheckReply(message) {
+	const repliedText = String(message?.reply_to_message?.text || "");
+	return /\[PROFILE_X_CHECK\]/i.test(repliedText);
 }
 
 function parseModeCommand(text) {
@@ -425,7 +434,6 @@ function formatMeCombined(profileRow, creditRow) {
 		.join("\n");
 }
 
-const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
 const PROFILE_EDIT_URL = "https://fisting.guide/admin/edit";
 const PROFILE_CREATE_URL = "https://fisting.guide/admin/create";
 const TOTAL_CREDIT_SQL_EXPR =
@@ -436,63 +444,52 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"COALESCE(list_star_event_cnt, 0) + " +
 	"COALESCE(super_credit, 0)";
 
-async function resolveProfileAction(env, userId, telegramUsername) {
-	const table = getProfilesTable(env);
-	const tgUserId = String(userId || "").trim();
-	const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
-
-	if (tgUserId) {
-		const byUserId = await env.DB.prepare(
-			`SELECT NULLIF(TRIM(COALESCE(telegram, '')), '') AS telegram FROM ${table} WHERE TRIM(COALESCE(tg_user_id, '')) = ? LIMIT 1`
-		)
-			.bind(tgUserId)
-			.first();
-		if (byUserId) {
-			const hasTelegram = Boolean(normalizeInput(byUserId?.telegram));
-			if (!hasTelegram) {
-				return {
-					text: "Your profile exists, but Telegram username is missing. Please add your Telegram first.",
-					buttonText: "add my telegram",
-					url: PROFILE_EDIT_URL,
-				};
-			}
-			return {
-				text: "Your profile exists. Please update your profile information here.",
-				buttonText: "edit my profile",
-				url: PROFILE_EDIT_URL,
-			};
-		}
-	}
-
-	if (normalizedTelegram) {
-		const byTelegram = await env.DB.prepare(
-			`SELECT 1 AS found FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
-		)
-			.bind(normalizedTelegram)
-			.first();
-		if (byTelegram) {
-			return {
-				text: "Your profile exists. Please update your profile information here.",
-				buttonText: "edit my profile",
-				url: PROFILE_EDIT_URL,
-			};
-		}
-	}
-
-	return {
-		text: "No profile found. Please create your profile first.",
-		buttonText: "create my profile",
-		url: PROFILE_CREATE_URL,
-	};
-}
-
-async function sendMissingTelegramProfileMessage(env, chatId, userId, telegramUsername) {
-	const action = await resolveProfileAction(env, userId, telegramUsername);
+async function sendAskXHandleForProfile(env, chatId) {
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: action.text || MISSING_TELEGRAM_PROFILE_MESSAGE,
+		text: buildProfileXCheckPrompt(),
 		reply_markup: {
-			inline_keyboard: [[{ text: action.buttonText, url: action.url }]],
+			force_reply: true,
+			input_field_placeholder: "Type your X handle",
+		},
+	});
+}
+
+async function sendProfileActionByXHandle(env, chatId, xHandleInput) {
+	const rows = await queryProfilesByX(env, xHandleInput);
+	if (rows.length > 1) {
+		return tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: "Multiple profiles found for this X handle. Please provide a more specific handle.",
+		});
+	}
+
+	if (rows.length === 0) {
+		return tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: "No profile found. Please create your profile first.",
+			reply_markup: {
+				inline_keyboard: [[{ text: "create my profile", url: PROFILE_CREATE_URL }]],
+			},
+		});
+	}
+
+	const matched = rows[0];
+	const hasTelegram = Boolean(normalizeInput(matched?.telegram));
+	return tg(env, "sendMessage", {
+		chat_id: chatId,
+		text: hasTelegram
+			? "Your profile exists. Please update your profile information here."
+			: "Your profile exists, but Telegram username is missing. Please add your Telegram first.",
+		reply_markup: {
+			inline_keyboard: [
+				[
+					{
+						text: hasTelegram ? "edit my profile" : "add my telegram",
+						url: PROFILE_EDIT_URL,
+					},
+				],
+			],
 		},
 	});
 }
@@ -566,7 +563,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 async function sendMyCredit(env, chatId, userId, telegramUsername) {
 	const row = await queryMyCreditRow(env, userId, telegramUsername);
 	if (!row) {
-		return sendMissingTelegramProfileMessage(env, chatId, userId, telegramUsername);
+		return sendAskXHandleForProfile(env, chatId);
 	}
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -639,14 +636,14 @@ async function handleMyProfile(env, message, ctx) {
 	if (!chatId) return;
 
 	if (!telegramUsername) {
-		await sendMissingTelegramProfileMessage(env, chatId, message?.from?.id, message?.from?.username);
+		await sendAskXHandleForProfile(env, chatId);
 		return;
 	}
 
 	try {
 		const rows = await queryProfilesByTelegram(env, telegramUsername);
 		if (rows.length === 0) {
-			await sendMissingTelegramProfileMessage(env, chatId, message?.from?.id, message?.from?.username);
+			await sendAskXHandleForProfile(env, chatId);
 			return;
 		}
 		if (rows.length > 1) {
@@ -764,6 +761,21 @@ async function handleMessage(env, message, ctx) {
 				await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
 			}
 			return;
+	}
+
+	if (isProfileXCheckReply(message)) {
+		const xInput = String(text || "").trim();
+		if (!xInput || xInput.startsWith("/")) {
+			await sendAskXHandleForProfile(env, chatId);
+			return;
+		}
+		try {
+			await sendProfileActionByXHandle(env, chatId, xInput);
+		} catch (err) {
+			console.error(err);
+			await tg(env, "sendMessage", { chat_id: chatId, text: "Query failed. Please try again later." });
+		}
+		return;
 	}
 
 	const command = normalizeCommand(text);

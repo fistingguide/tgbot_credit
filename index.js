@@ -277,10 +277,11 @@ function buildAllCreditKeyboard(rows) {
 	const inline_keyboard = [];
 	for (let i = 0; i < rows.length; i += 1) {
 		const xHandle = normalizeInput(rows[i]?.x_handle);
+		const totalCredit = Number(rows[i]?.total_credit || 0);
 		if (!xHandle) continue;
 		inline_keyboard.push([
 			{
-				text: `${i + 1}. Open X @${xHandle}`,
+				text: `@${xHandle} | ${totalCredit}`,
 				url: `https://x.com/${encodeURIComponent(xHandle)}`,
 			},
 		]);
@@ -339,8 +340,7 @@ async function sendAllCredit(env, chatId) {
 
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: formatCredit(rows),
-		parse_mode: "HTML",
+		text: "\u200B",
 		reply_markup: buildAllCreditKeyboard(rows),
 	});
 }

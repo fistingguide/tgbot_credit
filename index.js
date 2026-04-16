@@ -1268,31 +1268,7 @@ async function handleMessage(env, message, ctx) {
 
 	const mode = extractModeFromReply(message);
 	if (!mode) {
-		// Silent fallback: try exact lookup without sending guidance text.
-		try {
-			const byX = await queryProfilesByX(env, text);
-				if (byX.length === 1) {
-					await tg(env, "sendMessage", {
-						chat_id: chatId,
-						text: formatRow(byX[0], lang),
-						parse_mode: "HTML",
-						disable_web_page_preview: true,
-					});
-					return;
-				}
-				const byTg = await queryProfilesByTelegram(env, text);
-				if (byTg.length === 1) {
-					await tg(env, "sendMessage", {
-						chat_id: chatId,
-						text: formatRow(byTg[0], lang),
-						parse_mode: "HTML",
-						disable_web_page_preview: true,
-					});
-					return;
-				}
-			} catch (err) {
-				console.error(err);
-		}
+		// Do not auto-query on arbitrary text to avoid accidental triggers (e.g. @mentions).
 		return;
 	}
 

@@ -188,8 +188,8 @@ const I18N = {
 		ko: "캠페인 센터",
 		es: "Centro de campañas",
 	},
-	campaign_btn_list_star: { en: "List Star", "zh-Hans": "List Star", "zh-Hant": "List Star", ja: "List Star", ko: "List Star", es: "List Star" },
-	campaign_btn_authors: { en: "Call For Authors", "zh-Hans": "Call For Authors", "zh-Hant": "Call For Authors", ja: "Call For Authors", ko: "Call For Authors", es: "Call For Authors" },
+	campaign_btn_list_star: { en: "List Star ⭐1000", "zh-Hans": "List Star ⭐1000", "zh-Hant": "List Star ⭐1000", ja: "List Star ⭐1000", ko: "List Star ⭐1000", es: "List Star ⭐1000" },
+	campaign_btn_authors: { en: "Call For Authors ⭐2000", "zh-Hans": "Call For Authors ⭐2000", "zh-Hant": "Call For Authors ⭐2000", ja: "Call For Authors ⭐2000", ko: "Call For Authors ⭐2000", es: "Call For Authors ⭐2000" },
 	campaign_list_star_text: {
 		en: `List Star Project is live! For one month, we will promote outstanding fisting enthusiasts for free on the website and X! As a List Star, you will receive
 1. Official List top placement
@@ -241,132 +241,126 @@ A photo of the upper body with the face hidden, a fisting video, and a caption/c
 Una foto del torso superior con el rostro oculto, un video de fisting y un texto/copy sobre el video.`,
 	},
 	campaign_authors_text: {
-		en: `Fisting Stories Collection & Sharing Long-term Event Launch!
-Hello everyone, I’m starting a long-term event for experience sharing and story collection about fisting. Everyone who is interested is welcome to participate.
+		en: `# Fisting Stories Collection & Sharing
+## Long-term Event Announcement
 
-This event mainly collects the following content:
-How to safely start fisting (beginner steps, preparation)
-Correct methods, precautions, and practical tips for enema
-Safety techniques during fisting, lubricant choices, common problems and solutions
-Personal real-life fisting stories (solo or with a partner), feelings, and insights
-Toy recommendations, usage experiences, and maintenance tips
+Hey everyone!
+We are launching a long-term event for sharing fisting experiences and collecting fisting stories. If you are interested, you are welcome to join.
 
-Whether you’re a curious beginner or an experienced player, you’re welcome to submit and share. Stories can be long or short, and anonymous submissions are accepted.
+## What We Are Collecting
+- Beginner-friendly guidance on how to start fisting safely
+- Enema methods, precautions, and practical tips
+- Safety techniques during fisting, lubricant choices, and common problems with solutions
+- Real personal stories (solo or with a partner), feelings, and insights
+- Toy recommendations, usage experiences, and maintenance tips
 
-Safety First Statement:
-Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+## Reward
+- Every valid submission receives **2000 FG credits**
+- Anonymous submissions are supported
+- Both short and long stories are welcome
 
-Submission Methods:
-Send me a private message on my X (Twitter/X) account
-Or send me an email
+## How to Submit
+- DM me on X, tg, or send me an email`,
+		"zh-Hans": `# Fisting Stories Collection & Sharing
+## 长期活动公告
 
-I will read all submissions carefully, respect your privacy, and anonymous posts are supported. Looking forward to everyone sharing their experiences and stories to help more people explore this kink safely and enjoyably~
-Please submit directly via DM or email. Thank you!`,
-		"zh-Hans": `Fisting Stories Collection & Sharing 长期活动启动！
-大家好，我正在发起一个关于 fisting 经验分享与故事征集的长期活动，欢迎感兴趣的朋友参与。
+大家好！
+我们正在发起一个长期活动，用于分享 fisting 经验并征集 fisting 故事。欢迎所有感兴趣的朋友参与。
 
-本活动主要征集以下内容：
-如何安全开始 fisting（新手步骤、准备事项）
-enema 的正确方法、注意事项与实用技巧
-fisting 过程中的安全技巧、润滑剂选择、常见问题与解决方案
-真实的 fisting 个人故事（单人或伴侣）、感受与心得
-玩具推荐、使用体验与维护建议
+## 征集内容
+- 适合新手的安全开始 fisting 指南
+- Enema 的方法、注意事项和实用技巧
+- fisting 过程中的安全技巧、润滑剂选择，以及常见问题与解决方案
+- 真实个人 fisting 故事（单人或与伴侣），以及感受和心得
+- 玩具推荐、使用体验和维护技巧
 
-无论你是好奇的新手还是有经验的玩家，都欢迎投稿分享。故事可长可短，也支持匿名投稿。
+## 奖励
+- 每份有效投稿可获得 **2000 FG credits**
+- 支持匿名投稿
+- 长文和短文都欢迎
 
-Safety First Statement:
-Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+## 投稿方式
+- 通过 X 私信我，或 TG 联系我，或发送邮件`,
+		"zh-Hant": `# Fisting Stories Collection & Sharing
+## 長期活動公告
 
-投稿方式：
-通过我的 X（Twitter/X）账号私信我
-或发送邮件给我
+大家好！
+我們正在發起一個長期活動，用於分享 fisting 經驗並徵集 fisting 故事。歡迎所有有興趣的朋友參與。
 
-我会认真阅读每一份投稿，尊重你的隐私，并支持匿名发布。期待大家分享经验和故事，帮助更多人更安全、更愉快地探索这个 kink~
-请直接通过 DM 或邮箱投稿。谢谢！`,
-		"zh-Hant": `Fisting Stories Collection & Sharing 長期活動啟動！
-大家好，我正在發起一個關於 fisting 經驗分享與故事徵集的長期活動，歡迎有興趣的朋友參與。
+## 徵集內容
+- 適合新手的安全開始 fisting 指南
+- Enema 的方法、注意事項和實用技巧
+- fisting 過程中的安全技巧、潤滑劑選擇，以及常見問題與解決方案
+- 真實個人 fisting 故事（單人或與伴侶），以及感受和心得
+- 玩具推薦、使用體驗和維護技巧
 
-本活動主要徵集以下內容：
-如何安全開始 fisting（新手步驟、準備事項）
-enema 的正確方法、注意事項與實用技巧
-fisting 過程中的安全技巧、潤滑劑選擇、常見問題與解決方案
-真實的 fisting 個人故事（單人或伴侶）、感受與心得
-玩具推薦、使用體驗與維護建議
+## 獎勵
+- 每份有效投稿可獲得 **2000 FG credits**
+- 支援匿名投稿
+- 長文和短文都歡迎
 
-無論你是好奇的新手還是有經驗的玩家，都歡迎投稿分享。故事可長可短，也支援匿名投稿。
+## 投稿方式
+- 透過 X 私訊我，或 TG 聯繫我，或寄送 Email`,
+		ja: `# Fisting Stories Collection & Sharing
+## 長期イベント告知
 
-Safety First Statement:
-Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+みなさん、こんにちは！
+fisting の体験共有と fisting ストーリー収集のための長期イベントを開始します。興味のある方はぜひご参加ください。
 
-投稿方式：
-透過我的 X（Twitter/X）帳號私訊我
-或寄送 Email 給我
+## 募集内容
+- 初心者向けの安全な fisting の始め方
+- Enema の方法、注意点、実践的なコツ
+- fisting 中の安全テクニック、潤滑剤の選び方、よくある問題と解決策
+- 実際の個人 fisting ストーリー（ソロまたはパートナー）、感想や気づき
+- トイのおすすめ、使用体験、メンテナンスのコツ
 
-我會仔細閱讀每一份投稿，尊重你的隱私，並支援匿名發布。期待大家分享經驗和故事，幫助更多人更安全、更愉快地探索這個 kink~
-請直接透過 DM 或 Email 投稿。謝謝！`,
-		ja: `Fisting Stories Collection & Sharing 長期イベント開始！
-みなさんこんにちは。fistingの体験共有とストーリー募集の長期イベントを開始します。興味のある方はぜひご参加ください。
+## 報酬
+- 有効な投稿ごとに **2000 FG credits**
+- 匿名投稿可
+- 短文・長文どちらも歓迎
 
-主な募集内容：
-安全にfistingを始める方法（初心者ステップ、準備）
-enemaの正しい方法、注意点、実践的なコツ
-fisting中の安全テクニック、潤滑剤の選び方、よくある問題と対処法
-fistingの実体験ストーリー（ソロまたはパートナー）、感想や気づき
-トイのおすすめ、使用体験、メンテナンスのコツ
+## 投稿方法
+- X のDM、TG、またはメールで送ってください`,
+		ko: `# Fisting Stories Collection & Sharing
+## 장기 이벤트 안내
 
-初心者の方も経験者の方も歓迎です。長文・短文どちらでもOK、匿名投稿も可能です。
+안녕하세요!
+fisting 경험 공유와 fisting 스토리 수집을 위한 장기 이벤트를 시작합니다. 관심 있는 분들은 누구나 참여하실 수 있습니다.
 
-Safety First Statement:
-Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+## 모집 내용
+- 초보자를 위한 안전한 fisting 시작 가이드
+- Enema 방법, 주의사항, 실전 팁
+- fisting 중 안전 테크닉, 윤활제 선택, 자주 발생하는 문제와 해결법
+- 실제 개인 fisting 스토리(혼자 또는 파트너와), 느낌과 인사이트
+- 토이 추천, 사용 경험, 관리 팁
 
-投稿方法：
-X（Twitter/X）のDMで送る
-またはメールで送る
+## 보상
+- 유효한 제출 1건당 **2000 FG credits**
+- 익명 제출 가능
+- 짧은 글/긴 글 모두 환영
 
-すべての投稿を丁寧に読み、プライバシーを尊重します。匿名投稿にも対応します。みなさんの体験とストーリーが、より多くの人が安全に楽しくこのkinkを探求する助けになることを期待しています。
-DMまたはメールで直接ご投稿ください。ありがとうございます！`,
-		ko: `Fisting Stories Collection & Sharing 장기 이벤트 시작!
-안녕하세요. fisting 경험 공유 및 스토리 수집을 위한 장기 이벤트를 시작합니다. 관심 있는 모든 분들의 참여를 환영합니다.
+## 제출 방법
+- X DM, TG, 또는 이메일로 보내주세요`,
+		es: `# Fisting Stories Collection & Sharing
+## Anuncio de evento a largo plazo
 
-주요 모집 내용:
-fisting을 안전하게 시작하는 방법(초보 단계, 준비)
-enema의 올바른 방법, 주의사항, 실전 팁
-fisting 중 안전 테크닉, 윤활제 선택, 자주 발생하는 문제와 해결법
-실제 fisting 경험담(혼자 또는 파트너와), 느낌과 인사이트
-토이 추천, 사용 경험, 관리 팁
+¡Hola a todos!
+Estamos lanzando un evento a largo plazo para compartir experiencias de fisting y recopilar historias de fisting. Si te interesa, eres bienvenido a participar.
 
-호기심 많은 초보자든 숙련자든 모두 환영합니다. 글은 길거나 짧아도 괜찮고, 익명 제출도 가능합니다.
+## Qué estamos recopilando
+- Guía para principiantes sobre cómo empezar fisting de forma segura
+- Métodos de Enema, precauciones y consejos prácticos
+- Técnicas de seguridad durante fisting, elección de lubricantes y soluciones a problemas comunes
+- Historias personales reales de fisting (solo o con pareja), sensaciones e ideas
+- Recomendaciones de toys, experiencias de uso y consejos de mantenimiento
 
-Safety First Statement:
-Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+## Recompensa
+- Cada envío válido recibe **2000 FG credits**
+- Se aceptan envíos anónimos
+- Se aceptan textos largos y cortos
 
-제출 방법:
-내 X(Twitter/X) 계정으로 DM 보내기
-또는 이메일 보내기
-
-모든 제출물은 신중히 읽고, 개인정보를 존중하며, 익명 게시를 지원합니다. 여러분의 경험과 이야기가 더 많은 사람들이 이 kink를 더 안전하고 즐겁게 탐색하는 데 도움이 되길 바랍니다.
-DM 또는 이메일로 직접 제출해 주세요. 감사합니다!`,
-		es: `¡Lanzamiento del evento de largo plazo Fisting Stories Collection & Sharing!
-Hola a todos. Estoy iniciando un evento de largo plazo para compartir experiencias y recopilar historias sobre fisting. Todos los interesados son bienvenidos.
-
-Este evento recopila principalmente:
-Cómo empezar fisting de forma segura (pasos para principiantes, preparación)
-Métodos correctos, precauciones y consejos prácticos para enema
-Técnicas de seguridad durante fisting, elección de lubricantes, problemas comunes y soluciones
-Historias reales personales de fisting (solo o con pareja), sensaciones y aprendizajes
-Recomendaciones de toys, experiencias de uso y consejos de mantenimiento
-
-Tanto si eres principiante curioso como si tienes experiencia, eres bienvenido a compartir. Las historias pueden ser largas o cortas y se aceptan envíos anónimos.
-
-Safety First Statement:
-Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
-
-Métodos de envío:
-Envíame un mensaje privado por mi cuenta de X (Twitter/X)
-O envíame un correo electrónico
-
-Leeré cada envío con atención, respetaré tu privacidad y se admiten publicaciones anónimas. Espero que las experiencias e historias de todos ayuden a más personas a explorar este kink de forma segura y disfrutable.
-Envía directamente por DM o correo. ¡Gracias!`,
+## Cómo enviar
+- Envíame un DM por X, TG o por correo electrónico`,
 	},
 };
 

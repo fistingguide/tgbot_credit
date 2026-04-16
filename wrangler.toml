@@ -5,3 +5,13 @@ compatibility_date = "2026-04-15"
 d1_databases = [
   { binding = "DB", database_id = "d6f69b40-6768-431d-a2a4-2233aa802bc7", database_name = "japs" }
 ]
+
+[vars]
+# Put Telegram group chat IDs here (supports comma / space / newline / ; / Chinese comma separators).
+# Example: "-1001234567890,-1009876543210"
+LANG_GROUPS_ZH_HANS = ""
+LANG_GROUPS_ZH_HANT = ""
+LANG_GROUPS_JA = ""
+LANG_GROUPS_KO = ""
+LANG_GROUPS_ES = ""
+LANG_GROUPS_EN = ""

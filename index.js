@@ -185,7 +185,7 @@ const I18N = {
 function parseGroupIds(raw) {
 	return new Set(
 		String(raw || "")
-			.split(",")
+			.split(/[,\s;|，]+/)
 			.map((s) => s.trim())
 			.filter(Boolean)
 	);

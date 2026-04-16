@@ -193,7 +193,6 @@ async function upsertCredit(env, message) {
 	const table = getProfilesTable(env);
 	const tgUserId = String(from.id);
 	const telegram = normalizeInput(from.username).toLowerCase();
-	const eventCnt = msgCount + photoCount + videoCount;
 
 	const updateByTgUserId = await env.DB.prepare(
 		`UPDATE ${table} SET ` +
@@ -204,17 +203,16 @@ async function upsertCredit(env, message) {
 			"tg_msg_cnt = COALESCE(tg_msg_cnt, 0) + ?, " +
 			"tg_photo_cnt = COALESCE(tg_photo_cnt, 0) + ?, " +
 			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
-			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
 			"total_credit = " +
 			"(COALESCE(followers_count, 0) / 10.0) + " +
 			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
-			"(COALESCE(list_star_event_cnt, 0) + ?) + " +
+			"COALESCE(list_star_event_cnt, 0) + " +
 			"COALESCE(super_credit, 0) " +
 			"WHERE TRIM(COALESCE(tg_user_id, '')) = ?"
 	)
-		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, eventCnt, tgUserId)
+		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, msgCount, photoCount, videoCount, tgUserId)
 		.run();
 	const changedByUserId = Number(updateByTgUserId?.meta?.changes || 0);
 	if (changedByUserId > 0) return;
@@ -232,17 +230,16 @@ async function upsertCredit(env, message) {
 			"tg_msg_cnt = COALESCE(tg_msg_cnt, 0) + ?, " +
 			"tg_photo_cnt = COALESCE(tg_photo_cnt, 0) + ?, " +
 			"tg_video_cnt = COALESCE(tg_video_cnt, 0) + ?, " +
-			"list_star_event_cnt = COALESCE(list_star_event_cnt, 0) + ?, " +
 			"total_credit = " +
 			"(COALESCE(followers_count, 0) / 10.0) + " +
 			"((COALESCE(tg_msg_cnt, 0) + ?) * 1) + " +
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
-			"(COALESCE(list_star_event_cnt, 0) + ?) + " +
+			"COALESCE(list_star_event_cnt, 0) + " +
 			"COALESCE(super_credit, 0) " +
 			"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ?"
 	)
-		.bind(tgUserId, msgCount, photoCount, videoCount, eventCnt, msgCount, photoCount, videoCount, eventCnt, telegram)
+		.bind(tgUserId, msgCount, photoCount, videoCount, msgCount, photoCount, videoCount, telegram)
 		.run();
 	const changedByTelegram = Number(updateByTelegram?.meta?.changes || 0);
 	if (changedByTelegram === 0) {

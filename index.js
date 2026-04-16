@@ -384,10 +384,20 @@ function isGroupChat(chat) {
 	return t === "group" || t === "supergroup";
 }
 
+function isPrivateChat(chat) {
+	return String(chat?.type || "") === "private";
+}
+
+function isUpdaterankAdmin(env, userId) {
+	const adminId = String(env.UPDATERANK_ADMIN_TG_USER_ID || env.ADMIN_TG_USER_ID || "").trim();
+	if (!adminId) return false;
+	return String(userId || "").trim() === adminId;
+}
+
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
 	const cmd = normalizeCommand(text);
-	const isCreditCmd = cmd === "/me" || cmd === "/list" || cmd === "/campaign";
+	const isCreditCmd = cmd === "/me" || cmd === "/list" || cmd === "/campaign" || cmd === "/updaterank";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
@@ -688,6 +698,21 @@ async function queryAllCreditRowsByPage(env, page) {
 		"LIMIT ? OFFSET ?";
 	const result = await env.DB.prepare(sql).bind(ALL_CREDIT_PAGE_SIZE, offset).all();
 	return Array.isArray(result?.results) ? result.results : [];
+}
+
+async function updateRankByTotalCredit(env) {
+	const table = getProfilesTable(env);
+	const sql =
+		`WITH ranked AS (` +
+		`SELECT rowid AS rid, ROW_NUMBER() OVER (` +
+		`ORDER BY COALESCE(total_credit, 0) DESC, COALESCE(list_star_event_cnt, 0) DESC, rowid ASC` +
+		`) AS new_rank FROM ${table}` +
+		`) ` +
+		`UPDATE ${table} SET rank = (` +
+		`SELECT new_rank FROM ranked WHERE ranked.rid = ${table}.rowid` +
+		`)`;
+	const res = await env.DB.prepare(sql).run();
+	return Number(res?.meta?.changes || 0);
 }
 
 function formatMyCredit(row, lang) {
@@ -1169,6 +1194,7 @@ async function handleMessage(env, message, ctx) {
 	const isMyprofileCmd = command === "/me" || command.startsWith("/me@");
 	const isListCmd = command === "/list" || command.startsWith("/list@");
 	const isCampaignCmd = command === "/campaign" || command.startsWith("/campaign@");
+	const isUpdateRankCmd = command === "/updaterank" || command.startsWith("/updaterank@");
 
 	if (isListCmd) {
 		const sent = await sendAllCredit(env, chatId, lang);
@@ -1180,6 +1206,27 @@ async function handleMessage(env, message, ctx) {
 
 	if (isCampaignCmd) {
 		await sendCampaignMenu(env, chatId, lang);
+		return;
+	}
+
+	if (isUpdateRankCmd) {
+		const isAllowed = isPrivateChat(chat) && isUpdaterankAdmin(env, message?.from?.id);
+		if (!isAllowed) {
+			return;
+		}
+		try {
+			const changed = await updateRankByTotalCredit(env);
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: `Rank update completed. Updated rows: ${changed}`,
+			});
+		} catch (err) {
+			console.error("updateRankByTotalCredit failed:", err);
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: "Rank update failed. Please try again later.",
+			});
+		}
 		return;
 	}
 

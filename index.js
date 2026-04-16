@@ -65,7 +65,7 @@ function isGroupChat(chat) {
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
 	const cmd = normalizeCommand(text);
-	const isCreditCmd = cmd === "/myprofile" || cmd === "/alltgcredit";
+	const isCreditCmd = cmd === "/me" || cmd === "/list";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
@@ -510,7 +510,7 @@ function formatRow(row) {
 async function handleStart(env, chatId) {
 	await tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "Send /myprofile to start searching.",
+		text: "Send /me to start searching.",
 	});
 }
 
@@ -661,10 +661,10 @@ async function handleMessage(env, message, ctx) {
 	const command = normalizeCommand(text);
 	const isStartCmd = command === "/start" || command.startsWith("/start@");
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
-	const isMyprofileCmd = command === "/myprofile" || command.startsWith("/myprofile@");
-	const isAlltgcreditCmd = command === "/alltgcredit" || command.startsWith("/alltgcredit@");
+	const isMyprofileCmd = command === "/me" || command.startsWith("/me@");
+	const isListCmd = command === "/list" || command.startsWith("/list@");
 
-	if (isAlltgcreditCmd) {
+	if (isListCmd) {
 		const sent = await sendAllCredit(env, chatId);
 		if (isGroupChat(chat)) {
 			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);

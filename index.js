@@ -65,7 +65,7 @@ function isGroupChat(chat) {
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
 	const cmd = normalizeCommand(text);
-	const isCreditCmd = cmd === "/mytgcredit" || cmd === "/alltgcredit";
+	const isCreditCmd = cmd === "/myprofile" || cmd === "/alltgcredit";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
@@ -488,15 +488,17 @@ async function handleMyProfile(env, message, ctx) {
 			});
 			return;
 		}
-		const sent = await tg(env, "sendMessage", {
+		const sentProfile = await tg(env, "sendMessage", {
 			chat_id: chatId,
 			text: formatRow(rows[0]),
 			parse_mode: "HTML",
 			disable_web_page_preview: true,
 		});
+		const sentCredit = await sendMyCredit(env, chatId, message?.from?.id, message?.from?.username);
 		if (isGroupChat(chat)) {
 			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
+			scheduleDeleteMessage(env, ctx, chatId, sentProfile?.message_id, 20000);
+			scheduleDeleteMessage(env, ctx, chatId, sentCredit?.message_id, 20000);
 		}
 	} catch (err) {
 		console.error(err);
@@ -581,17 +583,7 @@ async function handleMessage(env, message, ctx) {
 	const isStartCmd = command === "/start" || command.startsWith("/start@");
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
 	const isMyprofileCmd = command === "/myprofile" || command.startsWith("/myprofile@");
-	const isMytgcreditCmd = command === "/mytgcredit" || command.startsWith("/mytgcredit@");
 	const isAlltgcreditCmd = command === "/alltgcredit" || command.startsWith("/alltgcredit@");
-
-	if (isMytgcreditCmd) {
-		const sent = await sendMyCredit(env, chatId, message?.from?.id, message?.from?.username);
-		if (isGroupChat(chat)) {
-			scheduleDeleteMessage(env, ctx, chatId, message?.message_id, 20000);
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, 20000);
-		}
-		return;
-	}
 
 	if (isAlltgcreditCmd) {
 		const sent = await sendAllCredit(env, chatId);

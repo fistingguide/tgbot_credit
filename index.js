@@ -261,14 +261,11 @@ function formatCredit(rows) {
 	const lines = ["<b>📊 Group Credit Leaderboard</b>", "━━━━━━━━━━━━"];
 	for (let i = 0; i < rows.length; i += 1) {
 		const row = rows[i];
-		const name = escapeHtml(displayName(row));
-		const msg = Number(row?.msg_count || 0);
-		const photo = Number(row?.photo_count || 0);
-		const video = Number(row?.video_count || 0);
+		const tgHandle = escapeHtml(String(row?.user_handle || "").trim());
 		const xHandle = escapeHtml(String(row?.x_handle || "").trim());
-		const total = Number(row?.star || 0);
-		lines.push(`${i + 1}. 👤 <b>${name}</b>`);
-		lines.push(`💬<b>${msg}</b>   🖼️<b>${photo}</b>   🎬<b>${video}</b>   ⭐<b>${total}</b>${xHandle ? `   𝕏<b>@${xHandle}</b>` : ""}`);
+		const totalCredit = Number(row?.total_credit || 0);
+		lines.push(`${i + 1}. 𝕏 <b>${xHandle ? `@${xHandle}` : "(empty)"}</b>   💬 <b>${tgHandle ? `@${tgHandle}` : "(empty)"}</b>`);
+		lines.push(`⭐ Total Credit: <b>${totalCredit}</b>`);
 		if (i !== rows.length - 1) {
 			lines.push("┈┈┈┈┈┈┈┈┈┈");
 		}
@@ -316,16 +313,12 @@ async function sendAllCredit(env, chatId) {
 	const table = getProfilesTable(env);
 	const sql =
 		`SELECT ` +
-		"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
 		"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
 		"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
-		"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
-		"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
-		"COALESCE(tg_video_cnt, 0) AS video_count, " +
-		`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
+		"COALESCE(total_credit, 0) AS total_credit " +
 		`FROM ${table} ` +
-		"WHERE COALESCE(tg_msg_cnt, 0) > 0 OR COALESCE(tg_photo_cnt, 0) > 0 OR COALESCE(tg_video_cnt, 0) > 0 OR COALESCE(total_credit, 0) > 0 " +
-		"ORDER BY star DESC, COALESCE(list_star_event_cnt, 0) DESC, msg_count DESC " +
+		"WHERE COALESCE(total_credit, 0) > 0 " +
+		"ORDER BY COALESCE(total_credit, 0) DESC, COALESCE(list_star_event_cnt, 0) DESC " +
 		"LIMIT 50";
 	const result = await env.DB.prepare(sql).all();
 	const rows = Array.isArray(result?.results) ? result.results : [];

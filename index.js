@@ -357,7 +357,7 @@ function formatMyCredit(row) {
 	const totalRows = Number(row?.total_rows || 0);
 	const total = Number(row?.star || 0);
 	return [
-		"<b>⭐ My Credit</b>",
+		"<b>⭐FistingGuide Credit</b>",
 		"━━━━━━━━━━━━",
 		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>${xHandle}</b>` : ""}`,
 		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
@@ -388,7 +388,7 @@ async function sendAllCredit(env, chatId) {
 
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: `Select X profile (${paged.page + 1}/${paged.totalPages}):`,
+		text: `FGList www.fisting.guide (${paged.page + 1}/${paged.totalPages}):`,
 		reply_markup: paged.reply_markup,
 	});
 }
@@ -494,7 +494,7 @@ function formatRow(row) {
 	const profileUrl = escapeHtml(row?.profile_url || "");
 
 	const lines = [
-		"<b>🔎 Profile Result</b>",
+		"<b>🔎FistingGuide Profile</b>",
 		"━━━━━━━━━━━━",
 		`👤 <b>${name}</b>`,
 		handle ? `𝕏 <b>X</b>: @${handle}` : "𝕏 <b>X</b>: (empty)",
@@ -594,7 +594,7 @@ async function handleCallback(env, callbackQuery) {
 			await tg(env, "editMessageText", {
 				chat_id: chatId,
 				message_id: messageId,
-				text: `Select X profile (${paged.page + 1}/${paged.totalPages}):`,
+				text: `FGList www.fisting.guide (${paged.page + 1}/${paged.totalPages}):`,
 				reply_markup: paged.reply_markup,
 			});
 		}

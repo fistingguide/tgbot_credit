@@ -426,6 +426,7 @@ function formatMeCombined(profileRow, creditRow) {
 }
 
 const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
+const ADD_TELEGRAM_URL = "https://www.fisting.guide/admin/edit?lang=en";
 const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
 	"(COALESCE(tg_msg_cnt, 0) * 1) + " +
@@ -433,6 +434,16 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(tg_video_cnt, 0) * 10) + " +
 	"COALESCE(list_star_event_cnt, 0) + " +
 	"COALESCE(super_credit, 0)";
+
+async function sendMissingTelegramProfileMessage(env, chatId) {
+	return tg(env, "sendMessage", {
+		chat_id: chatId,
+		text: MISSING_TELEGRAM_PROFILE_MESSAGE,
+		reply_markup: {
+			inline_keyboard: [[{ text: "add my telegram", url: ADD_TELEGRAM_URL }]],
+		},
+	});
+}
 
 async function sendAllCredit(env, chatId) {
 	const totalRows = await queryAllCreditCount(env);
@@ -503,10 +514,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 async function sendMyCredit(env, chatId, userId, telegramUsername) {
 	const row = await queryMyCreditRow(env, userId, telegramUsername);
 	if (!row) {
-		return tg(env, "sendMessage", {
-			chat_id: chatId,
-			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
-		});
+		return sendMissingTelegramProfileMessage(env, chatId);
 	}
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -579,20 +587,14 @@ async function handleMyProfile(env, message, ctx) {
 	if (!chatId) return;
 
 	if (!telegramUsername) {
-		await tg(env, "sendMessage", {
-			chat_id: chatId,
-			text: MISSING_TELEGRAM_PROFILE_MESSAGE,
-		});
+		await sendMissingTelegramProfileMessage(env, chatId);
 		return;
 	}
 
 	try {
 		const rows = await queryProfilesByTelegram(env, telegramUsername);
 		if (rows.length === 0) {
-			await tg(env, "sendMessage", {
-				chat_id: chatId,
-				text: MISSING_TELEGRAM_PROFILE_MESSAGE,
-			});
+			await sendMissingTelegramProfileMessage(env, chatId);
 			return;
 		}
 		if (rows.length > 1) {

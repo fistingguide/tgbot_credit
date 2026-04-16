@@ -280,10 +280,9 @@ function buildAllCreditKeyboardByPage(rows, page, env) {
 		const row = pageRows[i];
 		const xHandle = normalizeInput(row?.x_handle);
 		const xName = String(row?.name || "").trim();
-		const totalCredit = Number(row?.total_credit || 0);
 		if (!xHandle) continue;
 		buttonRow.push({
-			text: `${xName || `@${xHandle}`} | ${totalCredit}`,
+			text: `${xName || `@${xHandle}`}`,
 			url: `https://x.com/${encodeURIComponent(xHandle)}`,
 		});
 		if (buttonRow.length === 2) {

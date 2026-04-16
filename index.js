@@ -262,9 +262,8 @@ function formatCredit(rows) {
 	for (let i = 0; i < rows.length; i += 1) {
 		const row = rows[i];
 		const tgHandle = escapeHtml(String(row?.user_handle || "").trim());
-		const xHandle = escapeHtml(String(row?.x_handle || "").trim());
 		const totalCredit = Number(row?.total_credit || 0);
-		lines.push(`${i + 1}. 𝕏 <b>${xHandle ? `@${xHandle}` : "(empty)"}</b>   💬 <b>${tgHandle ? `@${tgHandle}` : "(empty)"}</b>`);
+		lines.push(`${i + 1}. 𝕏 <b>${normalizeInput(row?.x_handle) ? "(tap button)" : "(empty)"}</b>   💬 <b>${tgHandle ? `@${tgHandle}` : "(empty)"}</b>`);
 		lines.push(`⭐ Total Credit: <b>${totalCredit}</b>`);
 		if (i !== rows.length - 1) {
 			lines.push("┈┈┈┈┈┈┈┈┈┈");
@@ -272,6 +271,21 @@ function formatCredit(rows) {
 	}
 	lines.push("━━━━━━━━━━━━");
 	return lines.join("\n");
+}
+
+function buildAllCreditKeyboard(rows) {
+	const inline_keyboard = [];
+	for (let i = 0; i < rows.length; i += 1) {
+		const xHandle = normalizeInput(rows[i]?.x_handle);
+		if (!xHandle) continue;
+		inline_keyboard.push([
+			{
+				text: `${i + 1}. Open X @${xHandle}`,
+				url: `https://x.com/${encodeURIComponent(xHandle)}`,
+			},
+		]);
+	}
+	return inline_keyboard.length > 0 ? { inline_keyboard } : undefined;
 }
 
 function formatMyCredit(row) {
@@ -327,6 +341,7 @@ async function sendAllCredit(env, chatId) {
 		chat_id: chatId,
 		text: formatCredit(rows),
 		parse_mode: "HTML",
+		reply_markup: buildAllCreditKeyboard(rows),
 	});
 }
 

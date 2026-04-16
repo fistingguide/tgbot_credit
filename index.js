@@ -340,7 +340,7 @@ async function sendAllCredit(env, chatId) {
 
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "\u200B",
+		text: "Select X profile:",
 		reply_markup: buildAllCreditKeyboard(rows),
 	});
 }

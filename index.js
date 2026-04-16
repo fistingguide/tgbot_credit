@@ -168,6 +168,14 @@ const I18N = {
 	next: { en: "Next ➡", "zh-Hans": "下一页 ➡", "zh-Hant": "下一頁 ➡", ja: "次へ ➡", ko: "다음 ➡", es: "Siguiente ➡" },
 	profile_title: { en: "<b>🔎FistingGuide Profile</b>", "zh-Hans": "<b>🔎FistingGuide Profile</b>", "zh-Hant": "<b>🔎FistingGuide Profile</b>", ja: "<b>🔎FistingGuide Profile</b>", ko: "<b>🔎FistingGuide Profile</b>", es: "<b>🔎FistingGuide Profile</b>" },
 	daily_updates: { en: "<b>Daily updates</b>", "zh-Hans": "<b>每日更新</b>", "zh-Hant": "<b>每日更新</b>", ja: "<b>毎日更新</b>", ko: "<b>매일 업데이트</b>", es: "<b>Actualizaciones diarias</b>" },
+	credit_guide_line: {
+		en: "You can earn credits by increasing your X followers, chatting in tg groups, sending images and videos, joining campaigns, or becoming an admin. Leaderboard ranking is based on your total credit.",
+		"zh-Hans": "你可以通过提升X的粉丝数量、在tg群里聊天、发送图片和视频、参加campaign，或者成为管理员来获取积分。榜单排名的依据是你的总积分。",
+		"zh-Hant": "你可以透過提升X的粉絲數量、在tg群裡聊天、發送圖片和影片、參加campaign，或成為管理員來獲取積分。榜單排名依據你的總積分。",
+		ja: "Xのフォロワー数を増やすこと、tgグループでのチャット、画像や動画の送信、campaignへの参加、または管理者になることでクレジットを獲得できます。ランキングは総クレジットに基づきます。",
+		ko: "X 팔로워 수를 늘리고, tg 그룹에서 채팅하고, 이미지와 영상을 보내고, campaign에 참여하거나, 관리자가 되어 크레딧을 획득할 수 있습니다. 랭킹은 총 크레딧을 기준으로 합니다.",
+		es: "Puedes obtener créditos aumentando tus seguidores en X, chateando en grupos de tg, enviando imágenes y videos, participando en campañas o convirtiéndote en administrador. La clasificación del leaderboard se basa en tu crédito total.",
+	},
 	x_empty: { en: "𝕏 <b>X</b>: (empty)", "zh-Hans": "𝕏 <b>X</b>: （空）", "zh-Hant": "𝕏 <b>X</b>: （空）", ja: "𝕏 <b>X</b>: （空）", ko: "𝕏 <b>X</b>: (없음)", es: "𝕏 <b>X</b>: (vacío)" },
 	tg_empty: { en: "💬 <b>Telegram</b>: (empty)", "zh-Hans": "💬 <b>Telegram</b>: （空）", "zh-Hant": "💬 <b>Telegram</b>: （空）", ja: "💬 <b>Telegram</b>: （空）", ko: "💬 <b>Telegram</b>: (없음)", es: "💬 <b>Telegram</b>: (vacío)" },
 	location_label: { en: "Location", "zh-Hans": "地点", "zh-Hant": "地點", ja: "場所", ko: "위치", es: "Ubicación" },
@@ -799,6 +807,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	return [
 		t(lang, "profile_title"),
 		t(lang, "daily_updates"),
+		t(lang, "credit_guide_line"),
 		"━━━━━━━━━━━━",
 		`👤 <b>${profileName}</b>`,
 		xHandle ? `𝕏 <b>X</b>: @${xHandle}` : t(lang, "x_empty"),

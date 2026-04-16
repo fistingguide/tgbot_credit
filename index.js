@@ -180,6 +180,194 @@ const I18N = {
 	total_credit: { en: "Total Credit", "zh-Hans": "总积分", "zh-Hant": "總積分", ja: "総クレジット", ko: "총 크레딧", es: "Crédito total" },
 	website_btn: { en: "🌐 Website", "zh-Hans": "🌐 网站", "zh-Hant": "🌐 網站", ja: "🌐 サイト", ko: "🌐 웹사이트", es: "🌐 Sitio web" },
 	query_failed: { en: "Query failed. Please try again later.", "zh-Hans": "查询失败，请稍后再试。", "zh-Hant": "查詢失敗，請稍後再試。", ja: "検索に失敗しました。後でもう一度お試しください。", ko: "조회에 실패했습니다. 잠시 후 다시 시도하세요.", es: "La consulta falló. Inténtalo más tarde." },
+	campaign_menu_title: {
+		en: "Campaign Center",
+		"zh-Hans": "活动中心",
+		"zh-Hant": "活動中心",
+		ja: "キャンペーンセンター",
+		ko: "캠페인 센터",
+		es: "Centro de campañas",
+	},
+	campaign_btn_list_star: { en: "List Star", "zh-Hans": "List Star", "zh-Hant": "List Star", ja: "List Star", ko: "List Star", es: "List Star" },
+	campaign_btn_authors: { en: "Call For Authors", "zh-Hans": "Call For Authors", "zh-Hant": "Call For Authors", ja: "Call For Authors", ko: "Call For Authors", es: "Call For Authors" },
+	campaign_list_star_text: {
+		en: `List Star Project is live! For one month, we will promote outstanding fisting enthusiasts for free on the website and X! As a List Star, you will receive
+1. Official List top placement
+2. One exclusive poster
+3. Promotion on the official X account
+4. 1000 FG credit
+
+How to join?
+A photo of the upper body with the face hidden, a fisting video, and a caption/copy about the video.`,
+		"zh-Hans": `List Star 项目现已上线！在一个月内，我们将在网站和 X 上免费推广优秀的 fisting 爱好者！成为 List Star 你将获得：
+1. 官方榜单置顶展示
+2. 一张专属海报
+3. 官方 X 账号推广
+4. 1000 FG credit
+
+如何参与？
+提交一张上半身且遮挡面部的照片、一段 fisting 视频，以及该视频的文案说明。`,
+		"zh-Hant": `List Star 專案現已上線！在一個月內，我們將在網站和 X 上免費推廣優秀的 fisting 愛好者！成為 List Star 你將獲得：
+1. 官方榜單置頂展示
+2. 一張專屬海報
+3. 官方 X 帳號推廣
+4. 1000 FG credit
+
+如何參與？
+提交一張上半身且遮擋面部的照片、一段 fisting 影片，以及該影片的文案說明。`,
+		ja: `List Starプロジェクトがスタートしました！1か月間、優れたfisting愛好者をWebサイトとXで無料プロモーションします。List Starになると、以下を獲得できます：
+1. 公式リスト上位掲載
+2. 専用ポスター1枚
+3. 公式Xアカウントでの紹介
+4. 1000 FG credit
+
+参加方法：
+顔を隠した上半身写真、fisting動画、そして動画の説明文をご提出ください。`,
+		ko: `List Star 프로젝트가 시작되었습니다! 한 달 동안 뛰어난 fisting 애호가를 웹사이트와 X에서 무료로 홍보합니다. List Star가 되면 다음을 받게 됩니다:
+1. 공식 리스트 상단 노출
+2. 전용 포스터 1장
+3. 공식 X 계정 홍보
+4. 1000 FG credit
+
+참여 방법:
+얼굴을 가린 상반신 사진 1장, fisting 영상 1개, 그리고 영상 소개 문구를 제출해 주세요.`,
+		es: `¡El proyecto List Star ya está activo! Durante un mes, promocionaremos gratis en el sitio web y en X a entusiastas destacados del fisting. Como List Star, recibirás:
+1. Posición destacada en la lista oficial
+2. Un póster exclusivo
+3. Promoción en la cuenta oficial de X
+4. 1000 FG credit
+
+¿Cómo participar?
+Una foto del torso superior con el rostro oculto, un video de fisting y un texto/copy sobre el video.`,
+	},
+	campaign_authors_text: {
+		en: `Fisting Stories Collection & Sharing Long-term Event Launch!
+Hello everyone, I’m starting a long-term event for experience sharing and story collection about fisting. Everyone who is interested is welcome to participate.
+
+This event mainly collects the following content:
+How to safely start fisting (beginner steps, preparation)
+Correct methods, precautions, and practical tips for enema
+Safety techniques during fisting, lubricant choices, common problems and solutions
+Personal real-life fisting stories (solo or with a partner), feelings, and insights
+Toy recommendations, usage experiences, and maintenance tips
+
+Whether you’re a curious beginner or an experienced player, you’re welcome to submit and share. Stories can be long or short, and anonymous submissions are accepted.
+
+Safety First Statement:
+Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+
+Submission Methods:
+Send me a private message on my X (Twitter/X) account
+Or send me an email
+
+I will read all submissions carefully, respect your privacy, and anonymous posts are supported. Looking forward to everyone sharing their experiences and stories to help more people explore this kink safely and enjoyably~
+Please submit directly via DM or email. Thank you!`,
+		"zh-Hans": `Fisting Stories Collection & Sharing 长期活动启动！
+大家好，我正在发起一个关于 fisting 经验分享与故事征集的长期活动，欢迎感兴趣的朋友参与。
+
+本活动主要征集以下内容：
+如何安全开始 fisting（新手步骤、准备事项）
+enema 的正确方法、注意事项与实用技巧
+fisting 过程中的安全技巧、润滑剂选择、常见问题与解决方案
+真实的 fisting 个人故事（单人或伴侣）、感受与心得
+玩具推荐、使用体验与维护建议
+
+无论你是好奇的新手还是有经验的玩家，都欢迎投稿分享。故事可长可短，也支持匿名投稿。
+
+Safety First Statement:
+Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+
+投稿方式：
+通过我的 X（Twitter/X）账号私信我
+或发送邮件给我
+
+我会认真阅读每一份投稿，尊重你的隐私，并支持匿名发布。期待大家分享经验和故事，帮助更多人更安全、更愉快地探索这个 kink~
+请直接通过 DM 或邮箱投稿。谢谢！`,
+		"zh-Hant": `Fisting Stories Collection & Sharing 長期活動啟動！
+大家好，我正在發起一個關於 fisting 經驗分享與故事徵集的長期活動，歡迎有興趣的朋友參與。
+
+本活動主要徵集以下內容：
+如何安全開始 fisting（新手步驟、準備事項）
+enema 的正確方法、注意事項與實用技巧
+fisting 過程中的安全技巧、潤滑劑選擇、常見問題與解決方案
+真實的 fisting 個人故事（單人或伴侶）、感受與心得
+玩具推薦、使用體驗與維護建議
+
+無論你是好奇的新手還是有經驗的玩家，都歡迎投稿分享。故事可長可短，也支援匿名投稿。
+
+Safety First Statement:
+Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+
+投稿方式：
+透過我的 X（Twitter/X）帳號私訊我
+或寄送 Email 給我
+
+我會仔細閱讀每一份投稿，尊重你的隱私，並支援匿名發布。期待大家分享經驗和故事，幫助更多人更安全、更愉快地探索這個 kink~
+請直接透過 DM 或 Email 投稿。謝謝！`,
+		ja: `Fisting Stories Collection & Sharing 長期イベント開始！
+みなさんこんにちは。fistingの体験共有とストーリー募集の長期イベントを開始します。興味のある方はぜひご参加ください。
+
+主な募集内容：
+安全にfistingを始める方法（初心者ステップ、準備）
+enemaの正しい方法、注意点、実践的なコツ
+fisting中の安全テクニック、潤滑剤の選び方、よくある問題と対処法
+fistingの実体験ストーリー（ソロまたはパートナー）、感想や気づき
+トイのおすすめ、使用体験、メンテナンスのコツ
+
+初心者の方も経験者の方も歓迎です。長文・短文どちらでもOK、匿名投稿も可能です。
+
+Safety First Statement:
+Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+
+投稿方法：
+X（Twitter/X）のDMで送る
+またはメールで送る
+
+すべての投稿を丁寧に読み、プライバシーを尊重します。匿名投稿にも対応します。みなさんの体験とストーリーが、より多くの人が安全に楽しくこのkinkを探求する助けになることを期待しています。
+DMまたはメールで直接ご投稿ください。ありがとうございます！`,
+		ko: `Fisting Stories Collection & Sharing 장기 이벤트 시작!
+안녕하세요. fisting 경험 공유 및 스토리 수집을 위한 장기 이벤트를 시작합니다. 관심 있는 모든 분들의 참여를 환영합니다.
+
+주요 모집 내용:
+fisting을 안전하게 시작하는 방법(초보 단계, 준비)
+enema의 올바른 방법, 주의사항, 실전 팁
+fisting 중 안전 테크닉, 윤활제 선택, 자주 발생하는 문제와 해결법
+실제 fisting 경험담(혼자 또는 파트너와), 느낌과 인사이트
+토이 추천, 사용 경험, 관리 팁
+
+호기심 많은 초보자든 숙련자든 모두 환영합니다. 글은 길거나 짧아도 괜찮고, 익명 제출도 가능합니다.
+
+Safety First Statement:
+Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+
+제출 방법:
+내 X(Twitter/X) 계정으로 DM 보내기
+또는 이메일 보내기
+
+모든 제출물은 신중히 읽고, 개인정보를 존중하며, 익명 게시를 지원합니다. 여러분의 경험과 이야기가 더 많은 사람들이 이 kink를 더 안전하고 즐겁게 탐색하는 데 도움이 되길 바랍니다.
+DM 또는 이메일로 직접 제출해 주세요. 감사합니다!`,
+		es: `¡Lanzamiento del evento de largo plazo Fisting Stories Collection & Sharing!
+Hola a todos. Estoy iniciando un evento de largo plazo para compartir experiencias y recopilar historias sobre fisting. Todos los interesados son bienvenidos.
+
+Este evento recopila principalmente:
+Cómo empezar fisting de forma segura (pasos para principiantes, preparación)
+Métodos correctos, precauciones y consejos prácticos para enema
+Técnicas de seguridad durante fisting, elección de lubricantes, problemas comunes y soluciones
+Historias reales personales de fisting (solo o con pareja), sensaciones y aprendizajes
+Recomendaciones de toys, experiencias de uso y consejos de mantenimiento
+
+Tanto si eres principiante curioso como si tienes experiencia, eres bienvenido a compartir. Las historias pueden ser largas o cortas y se aceptan envíos anónimos.
+
+Safety First Statement:
+Fisting is a high-intensity activity. Safety, gradual progression, plenty of lubrication, and mutual consent are extremely important. All sharing in this event is for reference and exchange only and does not constitute any medical advice. Please always act responsibly, make full preparations, and stop immediately if you feel any discomfort and consult a doctor.
+
+Métodos de envío:
+Envíame un mensaje privado por mi cuenta de X (Twitter/X)
+O envíame un correo electrónico
+
+Leeré cada envío con atención, respetaré tu privacidad y se admiten publicaciones anónimas. Espero que las experiencias e historias de todos ayuden a más personas a explorar este kink de forma segura y disfrutable.
+Envía directamente por DM o correo. ¡Gracias!`,
+	},
 };
 
 function parseGroupIds(raw) {
@@ -229,7 +417,7 @@ function isGroupChat(chat) {
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
 	const cmd = normalizeCommand(text);
-	const isCreditCmd = cmd === "/me" || cmd === "/list";
+	const isCreditCmd = cmd === "/me" || cmd === "/list" || cmd === "/campaign";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
@@ -699,6 +887,19 @@ async function sendAllCredit(env, chatId, lang) {
 	});
 }
 
+async function sendCampaignMenu(env, chatId, lang) {
+	return tg(env, "sendMessage", {
+		chat_id: chatId,
+		text: t(lang, "campaign_menu_title"),
+		reply_markup: {
+			inline_keyboard: [
+				[{ text: t(lang, "campaign_btn_list_star"), callback_data: "campaign:list_star" }],
+				[{ text: t(lang, "campaign_btn_authors"), callback_data: "campaign:authors" }],
+			],
+		},
+	});
+}
+
 async function queryMyCreditRow(env, userId, telegramUsername) {
 	const table = getProfilesTable(env);
 	const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
@@ -876,6 +1077,24 @@ async function handleCallback(env, callbackQuery) {
 		return;
 	}
 
+	if (data === "campaign:list_star") {
+		await tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: t(lang, "campaign_list_star_text"),
+		});
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id });
+		return;
+	}
+
+	if (data === "campaign:authors") {
+		await tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: t(lang, "campaign_authors_text"),
+		});
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id });
+		return;
+	}
+
 	if (data.startsWith("credit_page:")) {
 		const rawPage = Number(data.split(":")[1]);
 		const targetPage = Number.isFinite(rawPage) ? rawPage : 0;
@@ -979,12 +1198,18 @@ async function handleMessage(env, message, ctx) {
 	const isHelpCmd = command === "/help" || command.startsWith("/help@");
 	const isMyprofileCmd = command === "/me" || command.startsWith("/me@");
 	const isListCmd = command === "/list" || command.startsWith("/list@");
+	const isCampaignCmd = command === "/campaign" || command.startsWith("/campaign@");
 
 	if (isListCmd) {
 		const sent = await sendAllCredit(env, chatId, lang);
 		if (isGroupChat(chat)) {
 			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
 		}
+		return;
+	}
+
+	if (isCampaignCmd) {
+		await sendCampaignMenu(env, chatId, lang);
 		return;
 	}
 

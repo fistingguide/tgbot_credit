@@ -274,19 +274,71 @@ function formatCredit(rows) {
 }
 
 function buildAllCreditKeyboard(rows) {
+	return buildAllCreditKeyboardByPage(rows, 0).reply_markup;
+}
+
+const ALL_CREDIT_PAGE_SIZE = 10;
+
+function buildAllCreditKeyboardByPage(rows, page) {
+	const safeRows = Array.isArray(rows) ? rows : [];
+	const totalPages = Math.max(1, Math.ceil(safeRows.length / ALL_CREDIT_PAGE_SIZE));
+	const safePage = Math.max(0, Math.min(Number(page || 0), totalPages - 1));
+	const start = safePage * ALL_CREDIT_PAGE_SIZE;
+	const pageRows = safeRows.slice(start, start + ALL_CREDIT_PAGE_SIZE);
+
 	const inline_keyboard = [];
-	for (let i = 0; i < rows.length; i += 1) {
-		const xHandle = normalizeInput(rows[i]?.x_handle);
-		const totalCredit = Number(rows[i]?.total_credit || 0);
+	let buttonRow = [];
+	for (let i = 0; i < pageRows.length; i += 1) {
+		const row = pageRows[i];
+		const xHandle = normalizeInput(row?.x_handle);
+		const xName = String(row?.name || "").trim();
+		const totalCredit = Number(row?.total_credit || 0);
 		if (!xHandle) continue;
-		inline_keyboard.push([
-			{
-				text: `@${xHandle} | ${totalCredit}`,
-				url: `https://x.com/${encodeURIComponent(xHandle)}`,
-			},
-		]);
+		buttonRow.push({
+			text: `${xName || `@${xHandle}`} | ${totalCredit}`,
+			url: `https://x.com/${encodeURIComponent(xHandle)}`,
+		});
+		if (buttonRow.length === 2) {
+			inline_keyboard.push(buttonRow);
+			buttonRow = [];
+		}
 	}
-	return inline_keyboard.length > 0 ? { inline_keyboard } : undefined;
+	if (buttonRow.length > 0) {
+		inline_keyboard.push(buttonRow);
+	}
+
+	if (totalPages > 1) {
+		const navRow = [];
+		if (safePage > 0) {
+			navRow.push({ text: "⬅ Prev", callback_data: `credit_page:${safePage - 1}` });
+		}
+		navRow.push({ text: `${safePage + 1}/${totalPages}`, callback_data: "credit_page:noop" });
+		if (safePage < totalPages - 1) {
+			navRow.push({ text: "Next ➡", callback_data: `credit_page:${safePage + 1}` });
+		}
+		inline_keyboard.push(navRow);
+	}
+
+	return {
+		page: safePage,
+		totalPages,
+		reply_markup: inline_keyboard.length > 0 ? { inline_keyboard } : undefined,
+	};
+}
+
+async function queryAllCreditRows(env) {
+	const table = getProfilesTable(env);
+	const sql =
+		`SELECT ` +
+		"NULLIF(TRIM(COALESCE(name, '')), '') AS name, " +
+		"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
+		"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
+		"COALESCE(total_credit, 0) AS total_credit " +
+		`FROM ${table} ` +
+		"WHERE COALESCE(total_credit, 0) > 0 AND TRIM(COALESCE(handle, '')) <> '' " +
+		"ORDER BY COALESCE(total_credit, 0) DESC, COALESCE(list_star_event_cnt, 0) DESC";
+	const result = await env.DB.prepare(sql).all();
+	return Array.isArray(result?.results) ? result.results : [];
 }
 
 function formatMyCredit(row) {
@@ -325,23 +377,19 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"COALESCE(super_credit, 0)";
 
 async function sendAllCredit(env, chatId) {
-	const table = getProfilesTable(env);
-	const sql =
-		`SELECT ` +
-		"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
-		"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
-		"COALESCE(total_credit, 0) AS total_credit " +
-		`FROM ${table} ` +
-		"WHERE COALESCE(total_credit, 0) > 0 " +
-		"ORDER BY COALESCE(total_credit, 0) DESC, COALESCE(list_star_event_cnt, 0) DESC " +
-		"LIMIT 50";
-	const result = await env.DB.prepare(sql).all();
-	const rows = Array.isArray(result?.results) ? result.results : [];
+	const rows = await queryAllCreditRows(env);
+	const paged = buildAllCreditKeyboardByPage(rows, 0);
+	if (!paged.reply_markup) {
+		return tg(env, "sendMessage", {
+			chat_id: chatId,
+			text: "No X profiles with total credit found.",
+		});
+	}
 
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: "Select X profile:",
-		reply_markup: buildAllCreditKeyboard(rows),
+		text: `Select X profile (${paged.page + 1}/${paged.totalPages}):`,
+		reply_markup: paged.reply_markup,
 	});
 }
 
@@ -516,6 +564,7 @@ async function handleMyProfile(env, message, ctx) {
 
 async function handleCallback(env, callbackQuery) {
 	const chatId = callbackQuery?.message?.chat?.id;
+	const messageId = callbackQuery?.message?.message_id;
 	const data = String(callbackQuery?.data || "");
 	if (!chatId) return;
 
@@ -528,6 +577,28 @@ async function handleCallback(env, callbackQuery) {
 	if (data === "mode_tg") {
 		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: "Switched to Telegram search" });
 		await askForInput(env, chatId, "tg");
+		return;
+	}
+
+	if (data === "credit_page:noop") {
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id });
+		return;
+	}
+
+	if (data.startsWith("credit_page:")) {
+		const rawPage = Number(data.split(":")[1]);
+		const targetPage = Number.isFinite(rawPage) ? rawPage : 0;
+		const rows = await queryAllCreditRows(env);
+		const paged = buildAllCreditKeyboardByPage(rows, targetPage);
+		if (messageId && paged.reply_markup) {
+			await tg(env, "editMessageText", {
+				chat_id: chatId,
+				message_id: messageId,
+				text: `Select X profile (${paged.page + 1}/${paged.totalPages}):`,
+				reply_markup: paged.reply_markup,
+			});
+		}
+		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id });
 		return;
 	}
 

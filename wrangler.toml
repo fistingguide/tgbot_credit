@@ -9,7 +9,7 @@ d1_databases = [
 [vars]
 # Put Telegram group chat IDs here (supports comma / space / newline / ; / Chinese comma separators).
 # Example: "-1001234567890,-1009876543210"
-LANG_GROUPS_ZH_HANS = ""
+LANG_GROUPS_ZH_HANS = "-1003523540828"
 LANG_GROUPS_ZH_HANT = ""
 LANG_GROUPS_JA = ""
 LANG_GROUPS_KO = ""

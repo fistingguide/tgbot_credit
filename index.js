@@ -426,7 +426,8 @@ function formatMeCombined(profileRow, creditRow) {
 }
 
 const MISSING_TELEGRAM_PROFILE_MESSAGE = "Please add your Telegram username to your profile first.";
-const ADD_TELEGRAM_URL = "https://www.fisting.guide/admin/edit?lang=en";
+const PROFILE_EDIT_URL = "https://fisting.guide/admin/edit";
+const PROFILE_CREATE_URL = "https://fisting.guide/admin/create";
 const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(CAST(followers_count AS REAL), 0) / 10.0) + " +
 	"(COALESCE(tg_msg_cnt, 0) * 1) + " +
@@ -435,12 +436,63 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"COALESCE(list_star_event_cnt, 0) + " +
 	"COALESCE(super_credit, 0)";
 
-async function sendMissingTelegramProfileMessage(env, chatId) {
+async function resolveProfileAction(env, userId, telegramUsername) {
+	const table = getProfilesTable(env);
+	const tgUserId = String(userId || "").trim();
+	const normalizedTelegram = normalizeInput(telegramUsername).toLowerCase();
+
+	if (tgUserId) {
+		const byUserId = await env.DB.prepare(
+			`SELECT NULLIF(TRIM(COALESCE(telegram, '')), '') AS telegram FROM ${table} WHERE TRIM(COALESCE(tg_user_id, '')) = ? LIMIT 1`
+		)
+			.bind(tgUserId)
+			.first();
+		if (byUserId) {
+			const hasTelegram = Boolean(normalizeInput(byUserId?.telegram));
+			if (!hasTelegram) {
+				return {
+					text: "Your profile exists, but Telegram username is missing. Please add your Telegram first.",
+					buttonText: "add my telegram",
+					url: PROFILE_EDIT_URL,
+				};
+			}
+			return {
+				text: "Your profile exists. Please update your profile information here.",
+				buttonText: "edit my profile",
+				url: PROFILE_EDIT_URL,
+			};
+		}
+	}
+
+	if (normalizedTelegram) {
+		const byTelegram = await env.DB.prepare(
+			`SELECT 1 AS found FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
+		)
+			.bind(normalizedTelegram)
+			.first();
+		if (byTelegram) {
+			return {
+				text: "Your profile exists. Please update your profile information here.",
+				buttonText: "edit my profile",
+				url: PROFILE_EDIT_URL,
+			};
+		}
+	}
+
+	return {
+		text: "No profile found. Please create your profile first.",
+		buttonText: "create my profile",
+		url: PROFILE_CREATE_URL,
+	};
+}
+
+async function sendMissingTelegramProfileMessage(env, chatId, userId, telegramUsername) {
+	const action = await resolveProfileAction(env, userId, telegramUsername);
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
-		text: MISSING_TELEGRAM_PROFILE_MESSAGE,
+		text: action.text || MISSING_TELEGRAM_PROFILE_MESSAGE,
 		reply_markup: {
-			inline_keyboard: [[{ text: "add my telegram", url: ADD_TELEGRAM_URL }]],
+			inline_keyboard: [[{ text: action.buttonText, url: action.url }]],
 		},
 	});
 }
@@ -514,7 +566,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 async function sendMyCredit(env, chatId, userId, telegramUsername) {
 	const row = await queryMyCreditRow(env, userId, telegramUsername);
 	if (!row) {
-		return sendMissingTelegramProfileMessage(env, chatId);
+		return sendMissingTelegramProfileMessage(env, chatId, userId, telegramUsername);
 	}
 	return tg(env, "sendMessage", {
 		chat_id: chatId,
@@ -587,14 +639,14 @@ async function handleMyProfile(env, message, ctx) {
 	if (!chatId) return;
 
 	if (!telegramUsername) {
-		await sendMissingTelegramProfileMessage(env, chatId);
+		await sendMissingTelegramProfileMessage(env, chatId, message?.from?.id, message?.from?.username);
 		return;
 	}
 
 	try {
 		const rows = await queryProfilesByTelegram(env, telegramUsername);
 		if (rows.length === 0) {
-			await sendMissingTelegramProfileMessage(env, chatId);
+			await sendMissingTelegramProfileMessage(env, chatId, message?.from?.id, message?.from?.username);
 			return;
 		}
 		if (rows.length > 1) {

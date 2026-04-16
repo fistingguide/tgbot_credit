@@ -191,176 +191,152 @@ const I18N = {
 	campaign_btn_list_star: { en: "List Star ⭐1000", "zh-Hans": "List Star ⭐1000", "zh-Hant": "List Star ⭐1000", ja: "List Star ⭐1000", ko: "List Star ⭐1000", es: "List Star ⭐1000" },
 	campaign_btn_authors: { en: "Call For Authors ⭐2000", "zh-Hans": "Call For Authors ⭐2000", "zh-Hant": "Call For Authors ⭐2000", ja: "Call For Authors ⭐2000", ko: "Call For Authors ⭐2000", es: "Call For Authors ⭐2000" },
 	campaign_list_star_text: {
-		en: `List Star Project is live! For one month, we will promote outstanding fisting enthusiasts for free on the website and X! As a List Star, you will receive
-1. Official List top placement
-2. One exclusive poster
-3. Promotion on the official X account
-4. 1000 FG credit
+		en: `📣
 
-How to join?
-A photo of the upper body with the face hidden, a fisting video, and a caption/copy about the video.`,
-		"zh-Hans": `List Star 项目现已上线！在一个月内，我们将在网站和 X 上免费推广优秀的 fisting 爱好者！成为 List Star 你将获得：
-1. 官方榜单置顶展示
-2. 一张专属海报
-3. 官方 X 账号推广
-4. 1000 FG credit
+List Star Project is live! 🚀 For one month, we will promote outstanding fisting enthusiasts for free on the website and X! 🌐𝕏 As a List Star, you will receive ✨
+1. Official List top placement 🏆
+2. One exclusive poster 🖼️
+3. Promotion on the official X account 📢
+4. 1000 FG credit ⭐1000
 
-如何参与？
-提交一张上半身且遮挡面部的照片、一段 fisting 视频，以及该视频的文案说明。`,
-		"zh-Hant": `List Star 專案現已上線！在一個月內，我們將在網站和 X 上免費推廣優秀的 fisting 愛好者！成為 List Star 你將獲得：
-1. 官方榜單置頂展示
-2. 一張專屬海報
-3. 官方 X 帳號推廣
-4. 1000 FG credit
+How to join? 🙌
+1. A photo of the upper body with the face hidden, 📸
+2. A fisting video, 🎬
+3. A caption/copy about the video. ✍️
+4. send those to our X or tg 📩`,
+		"zh-Hans": `📣
 
-如何參與？
-提交一張上半身且遮擋面部的照片、一段 fisting 影片，以及該影片的文案說明。`,
-		ja: `List Starプロジェクトがスタートしました！1か月間、優れたfisting愛好者をWebサイトとXで無料プロモーションします。List Starになると、以下を獲得できます：
-1. 公式リスト上位掲載
-2. 専用ポスター1枚
-3. 公式Xアカウントでの紹介
-4. 1000 FG credit
+List Star 项目现已上线！🚀 在一个月内，我们将在网站和 X 上免费推广优秀的 fisting 爱好者！🌐𝕏 作为 List Star 你将获得 ✨
+1. 官方榜单置顶展示 🏆
+2. 一张专属海报 🖼️
+3. 官方 X 账号推广 📢
+4. 1000 FG credit ⭐1000
 
-参加方法：
-顔を隠した上半身写真、fisting動画、そして動画の説明文をご提出ください。`,
-		ko: `List Star 프로젝트가 시작되었습니다! 한 달 동안 뛰어난 fisting 애호가를 웹사이트와 X에서 무료로 홍보합니다. List Star가 되면 다음을 받게 됩니다:
-1. 공식 리스트 상단 노출
-2. 전용 포스터 1장
-3. 공식 X 계정 홍보
-4. 1000 FG credit
+如何参与？🙌
+1. 一张上半身且遮挡面部的照片，📸
+2. 一段 fisting 视频，🎬
+3. 与视频相关的文案说明。✍️
+4. 发送到我们的 X 或 tg 📩`,
+		"zh-Hant": `📣
 
-참여 방법:
-얼굴을 가린 상반신 사진 1장, fisting 영상 1개, 그리고 영상 소개 문구를 제출해 주세요.`,
-		es: `¡El proyecto List Star ya está activo! Durante un mes, promocionaremos gratis en el sitio web y en X a entusiastas destacados del fisting. Como List Star, recibirás:
-1. Posición destacada en la lista oficial
-2. Un póster exclusivo
-3. Promoción en la cuenta oficial de X
-4. 1000 FG credit
+List Star 專案現已上線！🚀 在一個月內，我們將在網站和 X 上免費推廣優秀的 fisting 愛好者！🌐𝕏 作為 List Star 你將獲得 ✨
+1. 官方榜單置頂展示 🏆
+2. 一張專屬海報 🖼️
+3. 官方 X 帳號推廣 📢
+4. 1000 FG credit ⭐1000
 
-¿Cómo participar?
-Una foto del torso superior con el rostro oculto, un video de fisting y un texto/copy sobre el video.`,
+如何參與？🙌
+1. 一張上半身且遮擋面部的照片，📸
+2. 一段 fisting 影片，🎬
+3. 與影片相關的文案說明。✍️
+4. 發送到我們的 X 或 tg 📩`,
+		ja: `📣
+
+List Starプロジェクトが開始しました！🚀 1か月間、優れた fisting 愛好者をWebサイトとXで無料プロモーションします！🌐𝕏 List Starになると以下を獲得できます ✨
+1. 公式リスト上位掲載 🏆
+2. 専用ポスター1枚 🖼️
+3. 公式Xアカウントでの紹介 📢
+4. 1000 FG credit ⭐1000
+
+参加方法 🙌
+1. 顔を隠した上半身写真、📸
+2. fisting 動画、🎬
+3. 動画の説明文（キャプション）。✍️
+4. これらを私たちの X または tg に送信 📩`,
+		ko: `📣
+
+List Star 프로젝트가 시작되었습니다! 🚀 한 달 동안 뛰어난 fisting 애호가를 웹사이트와 X에서 무료로 홍보합니다! 🌐𝕏 List Star가 되면 다음을 받게 됩니다 ✨
+1. 공식 리스트 상단 노출 🏆
+2. 전용 포스터 1장 🖼️
+3. 공식 X 계정 홍보 📢
+4. 1000 FG credit ⭐1000
+
+참여 방법 🙌
+1. 얼굴을 가린 상반신 사진, 📸
+2. fisting 영상, 🎬
+3. 영상에 대한 캡션/설명 문구. ✍️
+4. 위 자료를 우리의 X 또는 tg 로 전송 📩`,
+		es: `📣
+
+¡El proyecto List Star ya está activo! 🚀 Durante un mes, promocionaremos gratis en el sitio web y en X a entusiastas destacados del fisting. 🌐𝕏 Como List Star recibirás ✨
+1. Posición destacada en la lista oficial 🏆
+2. Un póster exclusivo 🖼️
+3. Promoción en la cuenta oficial de X 📢
+4. 1000 FG credit ⭐1000
+
+¿Cómo participar? 🙌
+1. Una foto del torso superior con el rostro oculto, 📸
+2. Un video de fisting, 🎬
+3. Un texto/copy sobre el video. ✍️
+4. Envíalo a nuestro X o tg 📩`,
 	},
 	campaign_authors_text: {
-		en: `# Fisting Stories Collection & Sharing
-## Long-term Event Announcement
+		en: `Hey everyone! 👋
+We are launching a long-term event for sharing fisting experiences and collecting fisting stories. If you are interested, you are welcome to join.Anonymous submissions are supported and both short and long stories are welcome . ✨
 
-Hey everyone!
-We are launching a long-term event for sharing fisting experiences and collecting fisting stories. If you are interested, you are welcome to join.
+What We Are Collecting 🧩
+1. Beginner-friendly guidance on how to start fisting safely 🛡️
+2. Enema methods, precautions, and practical tips 💡
+3. Safety techniques during fisting, lubricant choices, and common problems with solutions 🧴
+4. Real personal stories (solo or with a partner), feelings, and insights ❤️
+5. Toy recommendations, usage experiences, and maintenance tips 🧸
 
-## What We Are Collecting
-- Beginner-friendly guidance on how to start fisting safely
-- Enema methods, precautions, and practical tips
-- Safety techniques during fisting, lubricant choices, and common problems with solutions
-- Real personal stories (solo or with a partner), feelings, and insights
-- Toy recommendations, usage experiences, and maintenance tips
+Reward: Every valid submission receives 2000 FG credits ⭐2000`,
+		"zh-Hans": `大家好！👋
+我们正在发起一个长期活动，用于分享 fisting 经验并征集 fisting 故事。如果你感兴趣，欢迎参与。支持匿名投稿，长文和短文都欢迎。✨
 
-## Reward
-- Every valid submission receives **2000 FG credits**
-- Anonymous submissions are supported
-- Both short and long stories are welcome
+征集内容 🧩
+1. 适合新手的安全开始 fisting 指南 🛡️
+2. Enema 的方法、注意事项和实用技巧 💡
+3. fisting 过程中的安全技巧、润滑剂选择，以及常见问题与解决方案 🧴
+4. 真实个人故事（单人或与伴侣）、感受和心得 ❤️
+5. 玩具推荐、使用体验和维护技巧 🧸
 
-## How to Submit
-- DM me on X, tg, or send me an email`,
-		"zh-Hans": `# Fisting Stories Collection & Sharing
-## 长期活动公告
+奖励：每份有效投稿可获得 2000 FG credits ⭐2000`,
+		"zh-Hant": `大家好！👋
+我們正在發起一個長期活動，用於分享 fisting 經驗並徵集 fisting 故事。如果你有興趣，歡迎參與。支援匿名投稿，長文和短文都歡迎。✨
 
-大家好！
-我们正在发起一个长期活动，用于分享 fisting 经验并征集 fisting 故事。欢迎所有感兴趣的朋友参与。
+徵集內容 🧩
+1. 適合新手的安全開始 fisting 指南 🛡️
+2. Enema 的方法、注意事項和實用技巧 💡
+3. fisting 過程中的安全技巧、潤滑劑選擇，以及常見問題與解決方案 🧴
+4. 真實個人故事（單人或與伴侶）、感受和心得 ❤️
+5. 玩具推薦、使用體驗和維護技巧 🧸
 
-## 征集内容
-- 适合新手的安全开始 fisting 指南
-- Enema 的方法、注意事项和实用技巧
-- fisting 过程中的安全技巧、润滑剂选择，以及常见问题与解决方案
-- 真实个人 fisting 故事（单人或与伴侣），以及感受和心得
-- 玩具推荐、使用体验和维护技巧
+獎勵：每份有效投稿可獲得 2000 FG credits ⭐2000`,
+		ja: `みなさん、こんにちは！👋
+fisting の体験共有と fisting ストーリー収集のための長期イベントを開始します。興味のある方はぜひご参加ください。匿名投稿OK、短文・長文どちらも歓迎です。✨
 
-## 奖励
-- 每份有效投稿可获得 **2000 FG credits**
-- 支持匿名投稿
-- 长文和短文都欢迎
+募集内容 🧩
+1. 初心者向けの安全な fisting の始め方 🛡️
+2. Enema の方法、注意点、実践的なコツ 💡
+3. fisting 中の安全テクニック、潤滑剤の選び方、よくある問題と解決策 🧴
+4. 実際の個人ストーリー（ソロまたはパートナー）、感想や気づき ❤️
+5. トイのおすすめ、使用体験、メンテナンスのコツ 🧸
 
-## 投稿方式
-- 通过 X 私信我，或 TG 联系我，或发送邮件`,
-		"zh-Hant": `# Fisting Stories Collection & Sharing
-## 長期活動公告
+報酬：有効な投稿ごとに 2000 FG credits ⭐2000`,
+		ko: `안녕하세요! 👋
+fisting 경험 공유와 fisting 스토리 수집을 위한 장기 이벤트를 시작합니다. 관심 있는 분들은 누구나 환영합니다. 익명 제출 가능, 짧은 글/긴 글 모두 환영합니다. ✨
 
-大家好！
-我們正在發起一個長期活動，用於分享 fisting 經驗並徵集 fisting 故事。歡迎所有有興趣的朋友參與。
+모집 내용 🧩
+1. 초보자를 위한 안전한 fisting 시작 가이드 🛡️
+2. Enema 방법, 주의사항, 실전 팁 💡
+3. fisting 중 안전 테크닉, 윤활제 선택, 자주 발생하는 문제와 해결법 🧴
+4. 실제 개인 스토리(혼자 또는 파트너와), 느낌과 인사이트 ❤️
+5. 토이 추천, 사용 경험, 관리 팁 🧸
 
-## 徵集內容
-- 適合新手的安全開始 fisting 指南
-- Enema 的方法、注意事項和實用技巧
-- fisting 過程中的安全技巧、潤滑劑選擇，以及常見問題與解決方案
-- 真實個人 fisting 故事（單人或與伴侶），以及感受和心得
-- 玩具推薦、使用體驗和維護技巧
+보상: 유효한 제출 1건당 2000 FG credits ⭐2000`,
+		es: `¡Hola a todos! 👋
+Estamos lanzando un evento a largo plazo para compartir experiencias de fisting y recopilar historias de fisting. Si te interesa, eres bienvenido a participar. Se aceptan envíos anónimos y textos largos o cortos. ✨
 
-## 獎勵
-- 每份有效投稿可獲得 **2000 FG credits**
-- 支援匿名投稿
-- 長文和短文都歡迎
+Qué estamos recopilando 🧩
+1. Guía para principiantes sobre cómo empezar fisting de forma segura 🛡️
+2. Métodos de Enema, precauciones y consejos prácticos 💡
+3. Técnicas de seguridad durante fisting, elección de lubricantes y soluciones a problemas comunes 🧴
+4. Historias personales reales (solo o con pareja), sensaciones e ideas ❤️
+5. Recomendaciones de toys, experiencias de uso y consejos de mantenimiento 🧸
 
-## 投稿方式
-- 透過 X 私訊我，或 TG 聯繫我，或寄送 Email`,
-		ja: `# Fisting Stories Collection & Sharing
-## 長期イベント告知
-
-みなさん、こんにちは！
-fisting の体験共有と fisting ストーリー収集のための長期イベントを開始します。興味のある方はぜひご参加ください。
-
-## 募集内容
-- 初心者向けの安全な fisting の始め方
-- Enema の方法、注意点、実践的なコツ
-- fisting 中の安全テクニック、潤滑剤の選び方、よくある問題と解決策
-- 実際の個人 fisting ストーリー（ソロまたはパートナー）、感想や気づき
-- トイのおすすめ、使用体験、メンテナンスのコツ
-
-## 報酬
-- 有効な投稿ごとに **2000 FG credits**
-- 匿名投稿可
-- 短文・長文どちらも歓迎
-
-## 投稿方法
-- X のDM、TG、またはメールで送ってください`,
-		ko: `# Fisting Stories Collection & Sharing
-## 장기 이벤트 안내
-
-안녕하세요!
-fisting 경험 공유와 fisting 스토리 수집을 위한 장기 이벤트를 시작합니다. 관심 있는 분들은 누구나 참여하실 수 있습니다.
-
-## 모집 내용
-- 초보자를 위한 안전한 fisting 시작 가이드
-- Enema 방법, 주의사항, 실전 팁
-- fisting 중 안전 테크닉, 윤활제 선택, 자주 발생하는 문제와 해결법
-- 실제 개인 fisting 스토리(혼자 또는 파트너와), 느낌과 인사이트
-- 토이 추천, 사용 경험, 관리 팁
-
-## 보상
-- 유효한 제출 1건당 **2000 FG credits**
-- 익명 제출 가능
-- 짧은 글/긴 글 모두 환영
-
-## 제출 방법
-- X DM, TG, 또는 이메일로 보내주세요`,
-		es: `# Fisting Stories Collection & Sharing
-## Anuncio de evento a largo plazo
-
-¡Hola a todos!
-Estamos lanzando un evento a largo plazo para compartir experiencias de fisting y recopilar historias de fisting. Si te interesa, eres bienvenido a participar.
-
-## Qué estamos recopilando
-- Guía para principiantes sobre cómo empezar fisting de forma segura
-- Métodos de Enema, precauciones y consejos prácticos
-- Técnicas de seguridad durante fisting, elección de lubricantes y soluciones a problemas comunes
-- Historias personales reales de fisting (solo o con pareja), sensaciones e ideas
-- Recomendaciones de toys, experiencias de uso y consejos de mantenimiento
-
-## Recompensa
-- Cada envío válido recibe **2000 FG credits**
-- Se aceptan envíos anónimos
-- Se aceptan textos largos y cortos
-
-## Cómo enviar
-- Envíame un DM por X, TG o por correo electrónico`,
+Recompensa: Cada envío válido recibe 2000 FG credits ⭐2000`,
 	},
 };
 

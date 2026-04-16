@@ -1,29 +1,14 @@
-﻿# Fisting Stories Collection & Sharing
-## Long-term Event Announcement
+﻿将/campaign指令下的文章征集的文本改为 📣
 
-Hey everyone!
-We are launching a long-term event for sharing fisting experiences and collecting fisting stories. If you are interested, you are welcome to join.
 
-## What We Are Collecting
-- Beginner-friendly guidance on how to start fisting safely
-- Enema methods, precautions, and practical tips
-- Safety techniques during fisting, lubricant choices, and common problems with solutions
-- Real personal stories (solo or with a partner), feelings, and insights
-- Toy recommendations, usage experiences, and maintenance tips
+List Star Project is live! 🚀 For one month, we will promote outstanding fisting enthusiasts for free on the website and X! 🌐𝕏 As a List Star, you will receive ✨
+1. Official List top placement 🏆
+2. One exclusive poster 🖼️
+3. Promotion on the official X account 📢
+4. 1000 FG credit ⭐1000
 
-## Reward
-- Every valid submission receives **2000 points**
-- Anonymous submissions are supported
-- Both short and long stories are welcome
-
-## How to Submit
-- Send a DM on X
-- Or send an email
-
-## Safety First
-Fisting is a high-intensity activity.
-Please always prioritize safety, proceed gradually, use enough lubrication, and ensure clear mutual consent.
-Stop immediately if you feel discomfort.
-All content in this event is for sharing and reference only, not medical advice.
-
-Thank you for participating and helping build a safer, more useful knowledge space for everyone.
+How to join? 🙌
+1. A photo of the upper body with the face hidden, 📸
+2. A fisting video, 🎬
+3. A caption/copy about the video. ✍️
+4. send those to our X or tg 📩

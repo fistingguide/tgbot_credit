@@ -1,5 +1,4 @@
 ﻿"use strict";
-import { maybeHandleVidCommands, runScheduledVidPush } from "./addvid.js";
 
 /**
  * Telegram query bot on Cloudflare Workers (webhook mode).
@@ -1141,7 +1140,6 @@ async function handleMessage(env, message, ctx) {
 	const chatId = message?.chat?.id;
 	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
-	const textOrCaption = String(message?.text || message?.caption || "").trim();
 	if (!chatId) return;
 	const lang = getChatLang(env, chatId);
 
@@ -1153,75 +1151,7 @@ async function handleMessage(env, message, ctx) {
 		}
 	}
 
-	const maybeVidCommand = normalizeCommand(textOrCaption);
-	if (maybeVidCommand === "/addvid" || maybeVidCommand === "/vid") {
-		try {
-			const vidHandled = await maybeHandleVidCommands(env, message);
-			if (vidHandled) return;
-		} catch (err) {
-			console.error("vid command failed:", err);
-			await tg(env, "sendMessage", { chat_id: chatId, text: "Video command failed. Please try again later." });
-			return;
-		}
-	}
-
 	if (!text) return;
-
-	// Prioritize core slash commands so they are not swallowed by reply-state branches.
-	const hardCommand = normalizeCommand(text);
-	const hardIsStartCmd = hardCommand === "/start" || hardCommand.startsWith("/start@");
-	const hardIsHelpCmd = hardCommand === "/help" || hardCommand.startsWith("/help@");
-	const hardIsMyprofileCmd = hardCommand === "/me" || hardCommand.startsWith("/me@");
-	const hardIsListCmd = hardCommand === "/list" || hardCommand.startsWith("/list@");
-	const hardIsCampaignCmd = hardCommand === "/campaign" || hardCommand.startsWith("/campaign@");
-	const hardIsUpdateRankCmd = hardCommand === "/updaterank" || hardCommand.startsWith("/updaterank@");
-
-	if (hardIsListCmd) {
-		const sent = await sendAllCredit(env, chatId, lang);
-		if (isGroupChat(chat)) {
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
-		}
-		return;
-	}
-
-	if (hardIsCampaignCmd) {
-		await sendCampaignMenu(env, chatId, lang);
-		return;
-	}
-
-	if (hardIsUpdateRankCmd) {
-		const isAllowed = isPrivateChat(chat) && isUpdaterankAdmin(env, message?.from?.id);
-		if (!isAllowed) {
-			return;
-		}
-		try {
-			const recalculated = await recalculateAllTotalCredit(env);
-			const changed = await updateRankByTotalCredit(env);
-			await tg(env, "sendMessage", {
-				chat_id: chatId,
-				text: `Update completed. Total credit recalculated: ${recalculated}; rank updated: ${changed}`,
-			});
-		} catch (err) {
-			console.error("updateRankByTotalCredit failed:", err);
-			await tg(env, "sendMessage", {
-				chat_id: chatId,
-				text: "Rank update failed. Please try again later.",
-			});
-		}
-		return;
-	}
-
-	if (hardIsStartCmd || hardIsHelpCmd) {
-		await handleStart(env, chatId, lang);
-		return;
-	}
-	if (hardIsMyprofileCmd) {
-		const sent = await handleMyProfile(env, message, ctx, lang);
-		if (isGroupChat(chat)) {
-			scheduleDeleteMessage(env, ctx, chatId, sent?.message_id, GROUP_REPLY_TTL_MS);
-		}
-		return;
-	}
 
 	const modeCommand = parseModeCommand(text);
 	if (modeCommand) {
@@ -1420,11 +1350,4 @@ export default {
 
 		return new Response("ok", { status: 200 });
 	},
-	async scheduled(event, env, ctx) {
-		ctx.waitUntil(runScheduledVidPush(env));
-	},
 };
-
-
-
-

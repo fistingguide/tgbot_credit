@@ -95,6 +95,13 @@ async function tg(env, method, payload) {
 	return data.result;
 }
 
+function explainError(err) {
+	const raw = String(err?.message || err || "unknown error").trim();
+	if (!raw) return "unknown error";
+	// Keep the message compact for Telegram replies.
+	return raw.length > 400 ? `${raw.slice(0, 400)}...` : raw;
+}
+
 function defaultState() {
 	return {
 		queue: [],
@@ -328,10 +335,42 @@ export async function maybeHandleVidCommands(env, message) {
 	const text = getTextFromMessage(message);
 	const command = normalizeCommand(text);
 	if (command === "/addvid") {
-		return handleAddVid(env, message);
+		try {
+			await handleAddVid(env, message);
+		} catch (err) {
+			const chatId = message?.chat?.id;
+			if (chatId) {
+				try {
+					await tg(env, "sendMessage", {
+						chat_id: chatId,
+						text: `Failed to run /addvid.\nReason: ${explainError(err)}`,
+					});
+				} catch (notifyErr) {
+					console.error("failed to notify /addvid error:", notifyErr);
+				}
+			}
+			console.error("/addvid failed:", err);
+		}
+		return true;
 	}
 	if (command === "/vid") {
-		return handleVidNow(env, message);
+		try {
+			await handleVidNow(env, message);
+		} catch (err) {
+			const chatId = message?.chat?.id;
+			if (chatId) {
+				try {
+					await tg(env, "sendMessage", {
+						chat_id: chatId,
+						text: `Failed to run /vid.\nReason: ${explainError(err)}`,
+					});
+				} catch (notifyErr) {
+					console.error("failed to notify /vid error:", notifyErr);
+				}
+			}
+			console.error("/vid failed:", err);
+		}
+		return true;
 	}
 	return false;
 }

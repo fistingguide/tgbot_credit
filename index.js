@@ -1141,6 +1141,7 @@ async function handleMessage(env, message, ctx) {
 	const chatId = message?.chat?.id;
 	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
+	const textOrCaption = String(message?.text || message?.caption || "").trim();
 	if (!chatId) return;
 	const lang = getChatLang(env, chatId);
 
@@ -1152,13 +1153,16 @@ async function handleMessage(env, message, ctx) {
 		}
 	}
 
-	try {
-		const vidHandled = await maybeHandleVidCommands(env, message);
-		if (vidHandled) return;
-	} catch (err) {
-		console.error("vid command failed:", err);
-		await tg(env, "sendMessage", { chat_id: chatId, text: "Video command failed. Please try again later." });
-		return;
+	const maybeVidCommand = normalizeCommand(textOrCaption);
+	if (maybeVidCommand === "/addvid" || maybeVidCommand === "/vid") {
+		try {
+			const vidHandled = await maybeHandleVidCommands(env, message);
+			if (vidHandled) return;
+		} catch (err) {
+			console.error("vid command failed:", err);
+			await tg(env, "sendMessage", { chat_id: chatId, text: "Video command failed. Please try again later." });
+			return;
+		}
 	}
 
 	if (!text) return;

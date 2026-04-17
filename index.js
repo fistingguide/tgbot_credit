@@ -167,7 +167,14 @@ const I18N = {
 	prev: { en: "⬅ Prev", "zh-Hans": "⬅ 上一页", "zh-Hant": "⬅ 上一頁", ja: "⬅ 前へ", ko: "⬅ 이전", es: "⬅ Anterior" },
 	next: { en: "Next ➡", "zh-Hans": "下一页 ➡", "zh-Hant": "下一頁 ➡", ja: "次へ ➡", ko: "다음 ➡", es: "Siguiente ➡" },
 	profile_title: { en: "<b>🔎FistingGuide Profile</b>", "zh-Hans": "<b>🔎FistingGuide Profile</b>", "zh-Hant": "<b>🔎FistingGuide Profile</b>", ja: "<b>🔎FistingGuide Profile</b>", ko: "<b>🔎FistingGuide Profile</b>", es: "<b>🔎FistingGuide Profile</b>" },
-	daily_updates: { en: "<b>Daily updates</b>", "zh-Hans": "<b>每日更新</b>", "zh-Hant": "<b>每日更新</b>", ja: "<b>毎日更新</b>", ko: "<b>매일 업데이트</b>", es: "<b>Actualizaciones diarias</b>" },
+	daily_updates: {
+		en: "<b>Total ranking updates daily at 00:00.</b>",
+		"zh-Hans": "<b>总排名每天0点会更新。</b>",
+		"zh-Hant": "<b>總排名每天0點會更新。</b>",
+		ja: "<b>総合ランキングは毎日0時に更新されます。</b>",
+		ko: "<b>종합 순위는 매일 0시에 업데이트됩니다.</b>",
+		es: "<b>La clasificación general se actualiza todos los días a las 00:00.</b>",
+	},
 	credit_guide_line: {
 		en: "You can earn credits by increasing your X followers, chatting in tg groups, sending images and videos, joining campaigns, or becoming an admin. Leaderboard ranking is based on your total credit.",
 		"zh-Hans": "你可以通过提升X的粉丝数量、在tg群里聊天、发送图片和视频、参加campaign，或者成为管理员来获取积分。榜单排名的依据是你的总积分。",
@@ -357,9 +364,24 @@ function parseGroupIds(raw) {
 	);
 }
 
-function getChatLang(env, chatId) {
+function mapTelegramLanguageCode(languageCode) {
+	const code = String(languageCode || "").trim().toLowerCase();
+	if (!code) return "en";
+	if (code === "zh-hant" || code.startsWith("zh-tw") || code.startsWith("zh-hk") || code.startsWith("zh-mo")) {
+		return "zh-Hant";
+	}
+	if (code === "zh-hans" || code.startsWith("zh")) {
+		return "zh-Hans";
+	}
+	if (code.startsWith("ja")) return "ja";
+	if (code.startsWith("ko")) return "ko";
+	if (code.startsWith("es")) return "es";
+	return "en";
+}
+
+function getChatLang(env, chatId, fallbackLanguageCode) {
 	const id = String(chatId || "").trim();
-	if (!id) return "en";
+	if (!id) return mapTelegramLanguageCode(fallbackLanguageCode);
 	const mapping = [
 		["zh-Hans", env.LANG_GROUPS_ZH_HANS],
 		["zh-Hant", env.LANG_GROUPS_ZH_HANT],
@@ -371,7 +393,7 @@ function getChatLang(env, chatId) {
 	for (const [lang, raw] of mapping) {
 		if (parseGroupIds(raw).has(id)) return lang;
 	}
-	return "en";
+	return mapTelegramLanguageCode(fallbackLanguageCode);
 }
 
 function t(lang, key, vars = {}) {
@@ -1076,7 +1098,7 @@ async function handleCallback(env, callbackQuery) {
 	const messageId = callbackQuery?.message?.message_id;
 	const data = String(callbackQuery?.data || "");
 	if (!chatId) return;
-	const lang = getChatLang(env, chatId);
+	const lang = getChatLang(env, chatId, callbackQuery?.from?.language_code);
 
 	if (data === "mode_x") {
 		await tg(env, "answerCallbackQuery", { callback_query_id: callbackQuery.id, text: t(lang, "switch_x") });
@@ -1141,7 +1163,7 @@ async function handleMessage(env, message, ctx) {
 	const chat = message?.chat;
 	const text = String(message?.text || "").trim();
 	if (!chatId) return;
-	const lang = getChatLang(env, chatId);
+	const lang = getChatLang(env, chatId, message?.from?.language_code);
 
 	if (isGroupChat(chat)) {
 		try {

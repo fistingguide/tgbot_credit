@@ -1,4 +1,5 @@
 ﻿"use strict";
+import { maybeHandleVidCommands, runScheduledVidPush } from "./addvid.js";
 
 /**
  * Telegram query bot on Cloudflare Workers (webhook mode).
@@ -1151,6 +1152,15 @@ async function handleMessage(env, message, ctx) {
 		}
 	}
 
+	try {
+		const vidHandled = await maybeHandleVidCommands(env, message);
+		if (vidHandled) return;
+	} catch (err) {
+		console.error("vid command failed:", err);
+		await tg(env, "sendMessage", { chat_id: chatId, text: "Video command failed. Please try again later." });
+		return;
+	}
+
 	if (!text) return;
 
 	const modeCommand = parseModeCommand(text);
@@ -1350,4 +1360,11 @@ export default {
 
 		return new Response("ok", { status: 200 });
 	},
+	async scheduled(event, env, ctx) {
+		ctx.waitUntil(runScheduledVidPush(env));
+	},
 };
+
+
+
+

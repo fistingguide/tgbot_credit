@@ -2,6 +2,10 @@
 main = "index.js"
 compatibility_date = "2026-04-15"
 
+[triggers]
+# Run every 30 minutes. Adjust as needed.
+crons = ["*/30 * * * *"]
+
 d1_databases = [
   { binding = "DB", database_id = "d6f69b40-6768-431d-a2a4-2233aa802bc7", database_name = "japs" }
 ]
@@ -15,6 +19,22 @@ LANG_GROUPS_JA = "-1003974622683"
 LANG_GROUPS_KO = "-1003958907510"
 LANG_GROUPS_ES = "-1003828411769"
 LANG_GROUPS_EN = "-1003561230213,-1003949678138,-1003952940495"
+
+# Channel used as media storage source for /addvid items.
+VID_STORE_CHANNEL_ID = "-1003288603758"
+
+
+
+# Chat/channel where pinned message stores queue+cursors state.
+VID_STATE_CHAT_ID = "-1003928819191"
+
+# Optional: explicit admin IDs for /addvid (fallback: UPDATERANK_ADMIN_TG_USER_ID).
+ADDVID_ADMIN_IDS = "8684441706"
+
+# Groups for scheduled video push and /vid command.
+# Format is the same as LANG_GROUPS_EN: comma / space / newline / ; / Chinese comma separators.
+VID_TARGET_GROUPS = "-5248528804,-1003523540828"
+
 
 # /updaterank private admin command. Set this to your Telegram numeric user id.
 UPDATERANK_ADMIN_TG_USER_ID = "8684441706"

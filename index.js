@@ -976,16 +976,11 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	const gapLine = `📈 <b>${t(lang, "credit_gap_to_prev")}</b>: <b>${prevGapText}</b>`;
 
 	return [
-		t(lang, "profile_title"),
 		rankLine,
 		totalLine,
 		gapLine,
-		`💡 <b>${t(lang, "how_to_gain_credit")}</b>`,
-		t(lang, "credit_guide_line"),
-		"━━━━━━━━━━━━",
 		`👤 <b>${profileName}</b>`,
 		`📍 <b>${t(lang, "location_label")}</b>: ${country}`,
-		"━━━━━━━━━━━━",
 		t(lang, "credit_title"),
 		`🐦 <b>${t(lang, "followers_label")}</b>: <b>${formatNumberDisplay(followersCount)}</b>`,
 		`💬 <b>${t(lang, "msg_label")}</b>: <b>${formatNumberDisplay(msg)}</b>`,
@@ -994,7 +989,8 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		`🎯 <b>${t(lang, "liststar_event_credit")}</b>: <b>${formatNumberDisplay(listStarEventCnt)}</b>`,
 		`⚡ <b>${t(lang, "super_credit")}</b>: <b>${formatNumberDisplay(superCredit)}</b>`,
 		`✅ <b>${t(lang, "checkin_credit")}</b>: <b>${formatNumberDisplay(checkinCredit)}</b>`,
-		"━━━━━━━━━━━━",
+		`💡 <b>${t(lang, "how_to_gain_credit")}</b>`,
+		t(lang, "credit_guide_line"),
 	]
 		.filter(Boolean)
 		.join("\n");

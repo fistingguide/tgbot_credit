@@ -993,7 +993,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		`✅ <b>${t(lang, "checkin_credit")}</b>: <b>${formatNumberDisplay(checkinCredit)}</b>`,
 		"━━━━━━━━━━━━",
 		`💡 <b>${t(lang, "how_to_gain_credit")}</b>`,
-		t(lang, "credit_guide_line"),
+		`<tg-spoiler>${t(lang, "credit_guide_line")}</tg-spoiler>`,
 	]
 		.filter(Boolean)
 		.join("\n");

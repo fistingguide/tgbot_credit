@@ -253,6 +253,14 @@ const I18N = {
 		ko: "출석 체크에 실패했습니다. 잠시 후 다시 시도하세요.",
 		es: "Error al hacer check-in. Inténtalo más tarde.",
 	},
+	super_admin_only_command: {
+		en: "This is a super admin command.",
+		"zh-Hans": "这是超级管理员指令。",
+		"zh-Hant": "這是超級管理員指令。",
+		ja: "これはスーパー管理者専用コマンドです。",
+		ko: "이 명령은 슈퍼 관리자 전용입니다.",
+		es: "Este es un comando de superadministrador.",
+	},
 	updaterank_success: {
 		en: "Update completed. Total credit recalculated: {recalculated}; rank updated: {changed}",
 		"zh-Hans": "更新完成。已重算总积分：{recalculated}；已更新排名：{changed}",
@@ -501,7 +509,7 @@ function isUpdaterankAdmin(env, userId) {
 function buildIncrements(message) {
 	const text = String(message?.text || "").trim();
 	const cmd = normalizeCommand(text);
-	const isCreditCmd = cmd === "/me" || cmd === "/list" || cmd === "/campaign" || cmd === "/updaterank";
+	const isCreditCmd = cmd === "/me" || cmd === "/list" || cmd === "/campaign" || cmd === "/updaterank" || cmd === "/checkin";
 	const msgCount = text && !isCreditCmd ? 1 : 0;
 	const photoCount = Array.isArray(message?.photo) && message.photo.length > 0 ? 1 : 0;
 	const videoCount = message?.video ? 1 : 0;
@@ -1123,16 +1131,10 @@ async function sendDailyCheckinMessageToAllChats(env) {
 	}
 }
 
-async function claimDailyCheckin(env, callbackQuery, lang) {
-	const callbackQueryId = callbackQuery?.id;
-	const tgUsername = normalizeInput(callbackQuery?.from?.username).toLowerCase();
+async function claimDailyCheckinForUser(env, from) {
+	const tgUsername = normalizeInput(from?.username).toLowerCase();
 	if (!tgUsername) {
-		await tg(env, "answerCallbackQuery", {
-			callback_query_id: callbackQueryId,
-			text: t(lang, "checkin_need_tg_username"),
-			show_alert: true,
-		});
-		return;
+		return "checkin_need_tg_username";
 	}
 
 	const table = getProfilesTable(env);
@@ -1144,31 +1146,16 @@ async function claimDailyCheckin(env, callbackQuery, lang) {
 		.all();
 	const profiles = Array.isArray(matchedRows?.results) ? matchedRows.results : [];
 	if (profiles.length === 0) {
-		await tg(env, "answerCallbackQuery", {
-			callback_query_id: callbackQueryId,
-			text: t(lang, "checkin_profile_not_found"),
-			show_alert: true,
-		});
-		return;
+		return "checkin_profile_not_found";
 	}
 	if (profiles.length > 1) {
-		await tg(env, "answerCallbackQuery", {
-			callback_query_id: callbackQueryId,
-			text: t(lang, "checkin_multiple_profiles_tg"),
-			show_alert: true,
-		});
-		return;
+		return "checkin_multiple_profiles_tg";
 	}
 
 	const targetRow = profiles[0];
 	const checkedIn = Number(targetRow?.checked_in_today || 0) === 1;
 	if (checkedIn) {
-		await tg(env, "answerCallbackQuery", {
-			callback_query_id: callbackQueryId,
-			text: t(lang, "checkin_already_done_today"),
-			show_alert: true,
-		});
-		return;
+		return "checkin_already_done_today";
 	}
 
 	const claimSql =
@@ -1180,17 +1167,18 @@ async function claimDailyCheckin(env, callbackQuery, lang) {
 	const claimRes = await env.DB.prepare(claimSql).bind(targetRow.rowid).run();
 	const changed = Number(claimRes?.meta?.changes || 0);
 	if (changed > 0) {
-		await tg(env, "answerCallbackQuery", {
-			callback_query_id: callbackQueryId,
-			text: t(lang, "checkin_success"),
-			show_alert: true,
-		});
-		return;
+		return "checkin_success";
 	}
 
+	return "checkin_failed";
+}
+
+async function claimDailyCheckin(env, callbackQuery, lang) {
+	const callbackQueryId = callbackQuery?.id;
+	const resultKey = await claimDailyCheckinForUser(env, callbackQuery?.from);
 	await tg(env, "answerCallbackQuery", {
 		callback_query_id: callbackQueryId,
-		text: t(lang, "checkin_failed"),
+		text: t(lang, resultKey),
 		show_alert: true,
 	});
 }
@@ -1449,6 +1437,7 @@ async function handleMessage(env, message, ctx) {
 	const isListCmd = command === "/list" || command.startsWith("/list@");
 	const isCampaignCmd = command === "/campaign" || command.startsWith("/campaign@");
 	const isUpdateRankCmd = command === "/updaterank" || command.startsWith("/updaterank@");
+	const isCheckinCmd = command === "/checkin" || command.startsWith("/checkin@");
 
 	if (isListCmd) {
 		const sent = await sendAllCredit(env, chatId, lang);
@@ -1480,6 +1469,31 @@ async function handleMessage(env, message, ctx) {
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
 				text: t(lang, "updaterank_failed"),
+			});
+		}
+		return;
+	}
+
+	if (isCheckinCmd) {
+		const isAllowed = isPrivateChat(chat) && isUpdaterankAdmin(env, message?.from?.id);
+		if (!isAllowed) {
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: t(lang, "super_admin_only_command"),
+			});
+			return;
+		}
+		try {
+			const resultKey = await claimDailyCheckinForUser(env, message?.from);
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: t(lang, resultKey),
+			});
+		} catch (err) {
+			console.error("checkin command failed:", err);
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: t(lang, "checkin_failed"),
 			});
 		}
 		return;

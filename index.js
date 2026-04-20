@@ -957,12 +957,7 @@ function buildMyProfileButtons(profileRow, creditRow, env, lang) {
 
 function formatMeCombined(profileRow, creditRow, lang) {
 	const profileName = escapeHtml(profileRow?.name || "Unnamed");
-	const xHandle = escapeHtml(normalizeInput(profileRow?.handle || creditRow?.x_handle));
-	const telegram = escapeHtml(normalizeInput(profileRow?.telegram || creditRow?.user_handle));
-	const district = escapeHtml(profileRow?.district || profileRow?.city || "Unknown");
-	const region = escapeHtml(profileRow?.region || profileRow?.province || "Unknown");
 	const country = escapeHtml(profileRow?.country || "Unknown");
-	const bio = escapeHtml(profileRow?.bio || "");
 
 	const followersCount = Number(creditRow?.followers_count || 0);
 	const msg = Number(creditRow?.msg_count || 0);
@@ -990,10 +985,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		t(lang, "credit_guide_line"),
 		"━━━━━━━━━━━━",
 		`👤 <b>${profileName}</b>`,
-		xHandle ? `𝕏 <b>X</b>: @${xHandle}` : t(lang, "x_empty"),
-		telegram ? `💬 <b>Telegram</b>: @${telegram}` : t(lang, "tg_empty"),
-		`📍 <b>${t(lang, "location_label")}</b>: ${district} / ${region} / ${country}`,
-		bio ? `📝 <b>${t(lang, "bio_label")}</b>: ${bio}` : "",
+		`📍 <b>${t(lang, "location_label")}</b>: ${country}`,
 		"━━━━━━━━━━━━",
 		t(lang, "credit_title"),
 		`🐦 <b>${t(lang, "followers_label")}</b>: <b>${formatNumberDisplay(followersCount)}</b>`,

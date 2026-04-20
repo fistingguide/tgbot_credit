@@ -193,6 +193,22 @@ const I18N = {
 	super_credit: { en: "Super Credit", "zh-Hans": "超级积分", "zh-Hant": "超級積分", ja: "スーパークレジット", ko: "슈퍼 크레딧", es: "Súper crédito" },
 	current_rank: { en: "Current Rank", "zh-Hans": "当前排名", "zh-Hant": "當前排名", ja: "現在の順位", ko: "현재 순위", es: "Rango actual" },
 	total_credit: { en: "Total Credit", "zh-Hans": "总积分", "zh-Hant": "總積分", ja: "総クレジット", ko: "총 크레딧", es: "Crédito total" },
+	credit_gap_to_prev: {
+		en: "Gap to previous rank",
+		"zh-Hans": "距离上一名",
+		"zh-Hant": "距離上一名",
+		ja: "1つ上との差",
+		ko: "윗순위와의 격차",
+		es: "Diferencia con el puesto anterior",
+	},
+	credit_gap_to_prev_top: {
+		en: "You are already rank #1.",
+		"zh-Hans": "你已经是第1名。",
+		"zh-Hant": "你已經是第1名。",
+		ja: "すでに1位です。",
+		ko: "이미 1위입니다.",
+		es: "Ya estás en el puesto #1.",
+	},
 	checkin_credit: { en: "Check-in Credit", "zh-Hans": "签到积分", "zh-Hant": "簽到積分", ja: "チェックインクレジット", ko: "출석 크레딧", es: "Crédito de check-in" },
 	website_btn: { en: "🌐 Website", "zh-Hans": "🌐 网站", "zh-Hant": "🌐 網站", ja: "🌐 サイト", ko: "🌐 웹사이트", es: "🌐 Sitio web" },
 	query_failed: { en: "Query failed. Please try again later.", "zh-Hans": "查询失败，请稍后再试。", "zh-Hant": "查詢失敗，請稍後再試。", ja: "検索に失敗しました。後でもう一度お試しください。", ko: "조회에 실패했습니다. 잠시 후 다시 시도하세요.", es: "La consulta falló. Inténtalo más tarde." },
@@ -872,6 +888,11 @@ function formatMyCredit(row, lang) {
 	const rank = Number(row?.rank_value || 0);
 	const totalRows = Number(row?.total_rows || 0);
 	const total = Number(row?.star || 0);
+	const prevGap = Math.max(0, Number(row?.prev_gap || 0));
+	const prevGapLine =
+		rank > 1
+			? `📈${t(lang, "credit_gap_to_prev")} <b>${prevGap}</b>`
+			: `📈${t(lang, "credit_gap_to_prev_top")}`;
 	return [
 		t(lang, "credit_title"),
 		"━━━━━━━━━━━━",
@@ -880,6 +901,7 @@ function formatMyCredit(row, lang) {
 		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
 		`✅${t(lang, "checkin_credit")} <b>${checkinCredit}</b>`,
 		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
+		prevGapLine,
 		"━━━━━━━━━━━━",
 	].join("\n");
 }
@@ -925,6 +947,11 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	const rank = Number(creditRow?.rank_value || 0);
 	const totalRows = Number(creditRow?.total_rows || 0);
 	const total = Number(creditRow?.star || 0);
+	const prevGap = Math.max(0, Number(creditRow?.prev_gap || 0));
+	const prevGapLine =
+		rank > 1
+			? `📈${t(lang, "credit_gap_to_prev")} <b>${prevGap}</b>`
+			: `📈${t(lang, "credit_gap_to_prev_top")}`;
 
 	return [
 		t(lang, "profile_title"),
@@ -943,6 +970,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
 		`✅${t(lang, "checkin_credit")} <b>${checkinCredit}</b>`,
 		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
+		prevGapLine,
 		"━━━━━━━━━━━━",
 	]
 		.filter(Boolean)
@@ -1051,20 +1079,24 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 
 	let row = await env.DB.prepare(
 		`SELECT ` +
-			"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
-			"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
-			"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
-			"COALESCE(followers_count, 0) AS followers_count, " +
-			"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
-			"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
-			"COALESCE(tg_video_cnt, 0) AS video_count, " +
-			"COALESCE(list_star_event_cnt, 0) AS list_star_event_cnt, " +
-			"COALESCE(super_credit, 0) AS super_credit, " +
-			"COALESCE(checkin_credit, 0) AS checkin_credit, " +
-			'COALESCE("rank", 0) AS rank_value, ' +
+			"COALESCE(NULLIF(TRIM(COALESCE(p.tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(p.telegram, '')), ''), 'Unknown') AS user_id, " +
+			"NULLIF(TRIM(COALESCE(p.telegram, '')), '') AS user_handle, " +
+			"NULLIF(TRIM(COALESCE(p.handle, '')), '') AS x_handle, " +
+			"COALESCE(p.followers_count, 0) AS followers_count, " +
+			"COALESCE(p.tg_msg_cnt, 0) AS msg_count, " +
+			"COALESCE(p.tg_photo_cnt, 0) AS photo_count, " +
+			"COALESCE(p.tg_video_cnt, 0) AS video_count, " +
+			"COALESCE(p.list_star_event_cnt, 0) AS list_star_event_cnt, " +
+			"COALESCE(p.super_credit, 0) AS super_credit, " +
+			"COALESCE(p.checkin_credit, 0) AS checkin_credit, " +
+			'COALESCE(p."rank", 0) AS rank_value, ' +
 			`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
-			`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
-			`FROM ${table} WHERE TRIM(COALESCE(tg_user_id, '')) = ? LIMIT 1`
+			`${TOTAL_CREDIT_SQL_EXPR} AS star, ` +
+			`CASE ` +
+			`WHEN COALESCE(p."rank", 0) <= 1 THEN 0 ` +
+			`ELSE MAX(0, COALESCE((SELECT ${TOTAL_CREDIT_SQL_EXPR} FROM ${table} AS prev WHERE COALESCE(prev."rank", 0) = COALESCE(p."rank", 0) - 1 LIMIT 1), 0) - (${TOTAL_CREDIT_SQL_EXPR})) ` +
+			`END AS prev_gap ` +
+			`FROM ${table} AS p WHERE TRIM(COALESCE(p.tg_user_id, '')) = ? LIMIT 1`
 	)
 		.bind(String(userId))
 		.first();
@@ -1072,20 +1104,24 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 	if (!row) {
 		row = await env.DB.prepare(
 			`SELECT ` +
-				"COALESCE(NULLIF(TRIM(COALESCE(tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(telegram, '')), ''), 'Unknown') AS user_id, " +
-				"NULLIF(TRIM(COALESCE(telegram, '')), '') AS user_handle, " +
-				"NULLIF(TRIM(COALESCE(handle, '')), '') AS x_handle, " +
-				"COALESCE(followers_count, 0) AS followers_count, " +
-				"COALESCE(tg_msg_cnt, 0) AS msg_count, " +
-				"COALESCE(tg_photo_cnt, 0) AS photo_count, " +
-				"COALESCE(tg_video_cnt, 0) AS video_count, " +
-				"COALESCE(list_star_event_cnt, 0) AS list_star_event_cnt, " +
-				"COALESCE(super_credit, 0) AS super_credit, " +
-				"COALESCE(checkin_credit, 0) AS checkin_credit, " +
-				'COALESCE("rank", 0) AS rank_value, ' +
+				"COALESCE(NULLIF(TRIM(COALESCE(p.tg_user_id, '')), ''), NULLIF(TRIM(COALESCE(p.telegram, '')), ''), 'Unknown') AS user_id, " +
+				"NULLIF(TRIM(COALESCE(p.telegram, '')), '') AS user_handle, " +
+				"NULLIF(TRIM(COALESCE(p.handle, '')), '') AS x_handle, " +
+				"COALESCE(p.followers_count, 0) AS followers_count, " +
+				"COALESCE(p.tg_msg_cnt, 0) AS msg_count, " +
+				"COALESCE(p.tg_photo_cnt, 0) AS photo_count, " +
+				"COALESCE(p.tg_video_cnt, 0) AS video_count, " +
+				"COALESCE(p.list_star_event_cnt, 0) AS list_star_event_cnt, " +
+				"COALESCE(p.super_credit, 0) AS super_credit, " +
+				"COALESCE(p.checkin_credit, 0) AS checkin_credit, " +
+				'COALESCE(p."rank", 0) AS rank_value, ' +
 				`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
-				`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
-				`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 1`
+				`${TOTAL_CREDIT_SQL_EXPR} AS star, ` +
+				`CASE ` +
+				`WHEN COALESCE(p."rank", 0) <= 1 THEN 0 ` +
+				`ELSE MAX(0, COALESCE((SELECT ${TOTAL_CREDIT_SQL_EXPR} FROM ${table} AS prev WHERE COALESCE(prev."rank", 0) = COALESCE(p."rank", 0) - 1 LIMIT 1), 0) - (${TOTAL_CREDIT_SQL_EXPR})) ` +
+				`END AS prev_gap ` +
+				`FROM ${table} AS p WHERE LOWER(TRIM(REPLACE(COALESCE(p.telegram, ''), '@', ''))) = ? LIMIT 1`
 		)
 			.bind(normalizedTelegram)
 			.first();

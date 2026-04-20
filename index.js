@@ -971,16 +971,15 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	const total = Number(creditRow?.star || 0);
 	const prevGap = Math.max(0, Number(creditRow?.prev_gap || 0));
 	const prevGapText = rank > 1 ? formatNumberDisplay(prevGap) : "0";
-	const summaryLine = t(lang, "rank_summary_line", {
-		rank: formatNumberDisplay(rank),
-		totalRows: formatNumberDisplay(totalRows),
-		total: formatNumberDisplay(total),
-		gap: prevGapText,
-	});
+	const rankLine = `🏆 <b>${t(lang, "current_rank")}</b>: <b>#${formatNumberDisplay(rank)}/${formatNumberDisplay(totalRows)}</b>`;
+	const totalLine = `⭐ <b>${t(lang, "total_credit")}</b>: <b>${formatNumberDisplay(total)}</b>`;
+	const gapLine = `📈 <b>${t(lang, "credit_gap_to_prev")}</b>: <b>${prevGapText}</b>`;
 
 	return [
 		t(lang, "profile_title"),
-		summaryLine,
+		rankLine,
+		totalLine,
+		gapLine,
 		`💡 <b>${t(lang, "how_to_gain_credit")}</b>`,
 		t(lang, "credit_guide_line"),
 		"━━━━━━━━━━━━",

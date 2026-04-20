@@ -183,6 +183,26 @@ const I18N = {
 		ko: "X 팔로워 수를 늘리고, tg 그룹에서 채팅하고, 이미지와 영상을 보내고, campaign에 참여하거나, 관리자가 되어 크레딧을 획득할 수 있습니다. 랭킹은 총 크레딧을 기준으로 합니다.",
 		es: "Puedes obtener créditos aumentando tus seguidores en X, chateando en grupos de tg, enviando imágenes y videos, participando en campañas o convirtiéndote en administrador. La clasificación del leaderboard se basa en tu crédito total.",
 	},
+	how_to_gain_credit: {
+		en: "How to gain credit",
+		"zh-Hans": "如何获得积分",
+		"zh-Hant": "如何獲得積分",
+		ja: "クレジットの獲得方法",
+		ko: "크레딧 획득 방법",
+		es: "Cómo ganar crédito",
+	},
+	followers_label: { en: "Followers", "zh-Hans": "粉丝", "zh-Hant": "粉絲", ja: "フォロワー", ko: "팔로워", es: "Seguidores" },
+	msg_label: { en: "Msg", "zh-Hans": "消息", "zh-Hant": "訊息", ja: "メッセージ", ko: "메시지", es: "Mensajes" },
+	photo_label: { en: "Photo", "zh-Hans": "图片", "zh-Hant": "圖片", ja: "画像", ko: "사진", es: "Fotos" },
+	video_label: { en: "Video", "zh-Hans": "视频", "zh-Hant": "視頻", ja: "動画", ko: "영상", es: "Videos" },
+	rank_summary_line: {
+		en: "Rank #{rank}/{totalRows} | Total Credit {total} | Gap to previous rank {gap}",
+		"zh-Hans": "排名 #{rank}/{totalRows} | 总积分 {total} | 距上一名 {gap}",
+		"zh-Hant": "排名 #{rank}/{totalRows} | 總積分 {total} | 距上一名 {gap}",
+		ja: "順位 #{rank}/{totalRows} | 総クレジット {total} | 1つ上との差 {gap}",
+		ko: "순위 #{rank}/{totalRows} | 총 크레딧 {total} | 윗순위와의 격차 {gap}",
+		es: "Rango #{rank}/{totalRows} | Crédito total {total} | Diferencia con el puesto anterior {gap}",
+	},
 	x_empty: { en: "𝕏 <b>X</b>: (empty)", "zh-Hans": "𝕏 <b>X</b>: （空）", "zh-Hant": "𝕏 <b>X</b>: （空）", ja: "𝕏 <b>X</b>: （空）", ko: "𝕏 <b>X</b>: (없음)", es: "𝕏 <b>X</b>: (vacío)" },
 	tg_empty: { en: "💬 <b>Telegram</b>: (empty)", "zh-Hans": "💬 <b>Telegram</b>: （空）", "zh-Hant": "💬 <b>Telegram</b>: （空）", ja: "💬 <b>Telegram</b>: （空）", ko: "💬 <b>Telegram</b>: (없음)", es: "💬 <b>Telegram</b>: (vacío)" },
 	location_label: { en: "Location", "zh-Hans": "地点", "zh-Hant": "地點", ja: "場所", ko: "위치", es: "Ubicación" },
@@ -906,6 +926,13 @@ function formatMyCredit(row, lang) {
 	].join("\n");
 }
 
+function formatNumberDisplay(value) {
+	const num = Number(value);
+	if (!Number.isFinite(num)) return "0";
+	if (Number.isInteger(num)) return String(num);
+	return String(num.toFixed(1));
+}
+
 function normalizeUrl(value) {
 	const raw = String(value || "").trim();
 	if (!raw) return "";
@@ -948,14 +975,18 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	const totalRows = Number(creditRow?.total_rows || 0);
 	const total = Number(creditRow?.star || 0);
 	const prevGap = Math.max(0, Number(creditRow?.prev_gap || 0));
-	const prevGapLine =
-		rank > 1
-			? `📈${t(lang, "credit_gap_to_prev")} <b>${prevGap}</b>`
-			: `📈${t(lang, "credit_gap_to_prev_top")}`;
+	const prevGapText = rank > 1 ? formatNumberDisplay(prevGap) : "0";
+	const summaryLine = t(lang, "rank_summary_line", {
+		rank: formatNumberDisplay(rank),
+		totalRows: formatNumberDisplay(totalRows),
+		total: formatNumberDisplay(total),
+		gap: prevGapText,
+	});
 
 	return [
 		t(lang, "profile_title"),
-		t(lang, "daily_updates"),
+		summaryLine,
+		`💡 <b>${t(lang, "how_to_gain_credit")}</b>`,
 		t(lang, "credit_guide_line"),
 		"━━━━━━━━━━━━",
 		`👤 <b>${profileName}</b>`,
@@ -965,12 +996,13 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		bio ? `📝 <b>${t(lang, "bio_label")}</b>: ${bio}` : "",
 		"━━━━━━━━━━━━",
 		t(lang, "credit_title"),
-		"━━━━━━━━━━━━",
-		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
-		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
-		`✅${t(lang, "checkin_credit")} <b>${checkinCredit}</b>`,
-		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
-		prevGapLine,
+		`🐦 <b>${t(lang, "followers_label")}</b>: <b>${formatNumberDisplay(followersCount)}</b>`,
+		`💬 <b>${t(lang, "msg_label")}</b>: <b>${formatNumberDisplay(msg)}</b>`,
+		`🖼️ <b>${t(lang, "photo_label")}</b>: <b>${formatNumberDisplay(photo)}</b>`,
+		`🎬 <b>${t(lang, "video_label")}</b>: <b>${formatNumberDisplay(video)}</b>`,
+		`🎯 <b>${t(lang, "liststar_event_credit")}</b>: <b>${formatNumberDisplay(listStarEventCnt)}</b>`,
+		`⚡ <b>${t(lang, "super_credit")}</b>: <b>${formatNumberDisplay(superCredit)}</b>`,
+		`✅ <b>${t(lang, "checkin_credit")}</b>: <b>${formatNumberDisplay(checkinCredit)}</b>`,
 		"━━━━━━━━━━━━",
 	]
 		.filter(Boolean)

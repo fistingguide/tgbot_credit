@@ -634,6 +634,10 @@ async function ensureProfilesSchema(env) {
 	await addColumnIfMissing("tg_photo_cnt", "tg_photo_cnt INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("tg_video_cnt", "tg_video_cnt INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("list_star_event_cnt", "list_star_event_cnt INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("super_credit", "super_credit INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("checkin_credit", "checkin_credit INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("checked_in_today", "checked_in_today INTEGER NOT NULL DEFAULT 0");
+	await addColumnIfMissing("rank_value", "rank_value INTEGER NOT NULL DEFAULT 0");
 	await addColumnIfMissing("total_credit", "total_credit INTEGER NOT NULL DEFAULT 0");
 }
 
@@ -1484,10 +1488,12 @@ async function handleMessage(env, message, ctx) {
 			return;
 		}
 		try {
-			const resultKey = await claimDailyCheckinForUser(env, message?.from);
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: t(lang, resultKey),
+				text: t(lang, "checkin_broadcast_text"),
+				reply_markup: {
+					inline_keyboard: [[{ text: t(lang, "checkin_button"), callback_data: "checkin:claim" }]],
+				},
 			});
 		} catch (err) {
 			console.error("checkin command failed:", err);

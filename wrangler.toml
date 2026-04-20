@@ -18,3 +18,7 @@ LANG_GROUPS_EN = "-1003561230213,-1003949678138,-1003952940495"
 
 # /updaterank private admin command. Set this to your Telegram numeric user id.
 UPDATERANK_ADMIN_TG_USER_ID = "8684441706"
+
+[triggers]
+# 22:05 Beijing time (UTC+8) = 14:05 UTC
+crons = ["5 14 * * *"]

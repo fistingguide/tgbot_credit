@@ -193,8 +193,82 @@ const I18N = {
 	super_credit: { en: "Super Credit", "zh-Hans": "超级积分", "zh-Hant": "超級積分", ja: "スーパークレジット", ko: "슈퍼 크레딧", es: "Súper crédito" },
 	current_rank: { en: "Current Rank", "zh-Hans": "当前排名", "zh-Hant": "當前排名", ja: "現在の順位", ko: "현재 순위", es: "Rango actual" },
 	total_credit: { en: "Total Credit", "zh-Hans": "总积分", "zh-Hant": "總積分", ja: "総クレジット", ko: "총 크레딧", es: "Crédito total" },
+	checkin_credit: { en: "Check-in Credit", "zh-Hans": "签到积分", "zh-Hant": "簽到積分", ja: "チェックインクレジット", ko: "출석 크레딧", es: "Crédito de check-in" },
 	website_btn: { en: "🌐 Website", "zh-Hans": "🌐 网站", "zh-Hant": "🌐 網站", ja: "🌐 サイト", ko: "🌐 웹사이트", es: "🌐 Sitio web" },
 	query_failed: { en: "Query failed. Please try again later.", "zh-Hans": "查询失败，请稍后再试。", "zh-Hant": "查詢失敗，請稍後再試。", ja: "検索に失敗しました。後でもう一度お試しください。", ko: "조회에 실패했습니다. 잠시 후 다시 시도하세요.", es: "La consulta falló. Inténtalo más tarde." },
+	checkin_broadcast_text: {
+		en: "Daily check-in: get 50 credits.",
+		"zh-Hans": "签到获得50积分",
+		"zh-Hant": "簽到獲得50積分",
+		ja: "チェックインで50クレジット獲得。",
+		ko: "출석 체크 시 50 크레딧 획득.",
+		es: "Check-in diario: obtén 50 créditos.",
+	},
+	checkin_button: { en: "Check in", "zh-Hans": "签到", "zh-Hant": "簽到", ja: "チェックイン", ko: "출석 체크", es: "Hacer check-in" },
+	checkin_need_tg_username: {
+		en: "Please add a Telegram username in your Telegram profile, then try again.",
+		"zh-Hans": "请先在你的Telegram资料中添加用户名，再重试签到。",
+		"zh-Hant": "請先在你的Telegram資料中添加用戶名，再重試簽到。",
+		ja: "Telegramプロフィールにユーザー名を追加してから、再度チェックインしてください。",
+		ko: "Telegram 프로필에 사용자명을 추가한 뒤 다시 출석 체크하세요.",
+		es: "Agrega un nombre de usuario de Telegram en tu perfil y vuelve a intentarlo.",
+	},
+	checkin_already_done_today: {
+		en: "You have already checked in today.",
+		"zh-Hans": "你今天已经签到过了。",
+		"zh-Hant": "你今天已經簽到過了。",
+		ja: "今日はすでにチェックイン済みです。",
+		ko: "오늘은 이미 출석 체크를 완료했습니다.",
+		es: "Ya hiciste check-in hoy.",
+	},
+	checkin_profile_not_found: {
+		en: "No matching profile found for your Telegram username.",
+		"zh-Hans": "未找到与你Telegram用户名匹配的档案。",
+		"zh-Hant": "未找到與你Telegram用戶名匹配的檔案。",
+		ja: "あなたのTelegramユーザー名に一致するプロフィールが見つかりません。",
+		ko: "회원님의 Telegram 사용자명과 일치하는 프로필을 찾을 수 없습니다.",
+		es: "No se encontró un perfil coincidente con tu usuario de Telegram.",
+	},
+	checkin_multiple_profiles_tg: {
+		en: "Multiple profiles found for your Telegram username. Please contact admin.",
+		"zh-Hans": "你的Telegram用户名匹配到多个档案，请联系管理员。",
+		"zh-Hant": "你的Telegram用戶名匹配到多個檔案，請聯繫管理員。",
+		ja: "Telegramユーザー名に複数のプロフィールが見つかりました。管理者に連絡してください。",
+		ko: "Telegram 사용자명으로 여러 프로필이 발견되었습니다. 관리자에게 문의하세요.",
+		es: "Se encontraron varios perfiles para tu usuario de Telegram. Contacta al administrador.",
+	},
+	checkin_success: {
+		en: "Check-in successful. +50 credits.",
+		"zh-Hans": "签到成功，+50积分。",
+		"zh-Hant": "簽到成功，+50積分。",
+		ja: "チェックイン成功。+50クレジット。",
+		ko: "출석 체크 성공, +50 크레딧.",
+		es: "Check-in exitoso. +50 créditos.",
+	},
+	checkin_failed: {
+		en: "Check-in failed. Please try again later.",
+		"zh-Hans": "签到失败，请稍后再试。",
+		"zh-Hant": "簽到失敗，請稍後再試。",
+		ja: "チェックインに失敗しました。後でもう一度お試しください。",
+		ko: "출석 체크에 실패했습니다. 잠시 후 다시 시도하세요.",
+		es: "Error al hacer check-in. Inténtalo más tarde.",
+	},
+	updaterank_success: {
+		en: "Update completed. Total credit recalculated: {recalculated}; rank updated: {changed}",
+		"zh-Hans": "更新完成。已重算总积分：{recalculated}；已更新排名：{changed}",
+		"zh-Hant": "更新完成。已重算總積分：{recalculated}；已更新排名：{changed}",
+		ja: "更新が完了しました。総クレジット再計算: {recalculated}、順位更新: {changed}",
+		ko: "업데이트 완료. 총 크레딧 재계산: {recalculated}, 순위 업데이트: {changed}",
+		es: "Actualización completada. Crédito total recalculado: {recalculated}; ranking actualizado: {changed}",
+	},
+	updaterank_failed: {
+		en: "Rank update failed. Please try again later.",
+		"zh-Hans": "排名更新失败，请稍后再试。",
+		"zh-Hant": "排名更新失敗，請稍後再試。",
+		ja: "順位更新に失敗しました。後でもう一度お試しください。",
+		ko: "순위 업데이트에 실패했습니다. 잠시 후 다시 시도하세요.",
+		es: "Error al actualizar el ranking. Inténtalo más tarde.",
+	},
 	campaign_menu_title: {
 		en: "Campaign Center",
 		"zh-Hans": "活动中心",
@@ -580,7 +654,8 @@ async function upsertCredit(env, message) {
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
 			"COALESCE(list_star_event_cnt, 0) + " +
-			"COALESCE(super_credit, 0) " +
+			"COALESCE(super_credit, 0) + " +
+			"COALESCE(checkin_credit, 0) " +
 			"WHERE TRIM(COALESCE(tg_user_id, '')) = ?"
 	)
 		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, msgCount, photoCount, videoCount, tgUserId)
@@ -607,7 +682,8 @@ async function upsertCredit(env, message) {
 			"((COALESCE(tg_photo_cnt, 0) + ?) * 2) + " +
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
 			"COALESCE(list_star_event_cnt, 0) + " +
-			"COALESCE(super_credit, 0) " +
+			"COALESCE(super_credit, 0) + " +
+			"COALESCE(checkin_credit, 0) " +
 			"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ?"
 	)
 		.bind(tgUserId, msgCount, photoCount, videoCount, msgCount, photoCount, videoCount, telegram)
@@ -754,7 +830,8 @@ async function recalculateAllTotalCredit(env) {
 		"(COALESCE(tg_photo_cnt, 0) * 2) + " +
 		"(COALESCE(tg_video_cnt, 0) * 10) + " +
 		"COALESCE(list_star_event_cnt, 0) + " +
-		"COALESCE(super_credit, 0)";
+		"COALESCE(super_credit, 0) + " +
+		"COALESCE(checkin_credit, 0)";
 	const res = await env.DB.prepare(sql).run();
 	return Number(res?.meta?.changes || 0);
 }
@@ -771,6 +848,7 @@ function formatMyCredit(row, lang) {
 	const video = Number(row?.video_count || 0);
 	const listStarEventCnt = Number(row?.list_star_event_cnt || 0);
 	const superCredit = Number(row?.super_credit || 0);
+	const checkinCredit = Number(row?.checkin_credit || 0);
 	const rank = Number(row?.rank_value || 0);
 	const totalRows = Number(row?.total_rows || 0);
 	const total = Number(row?.star || 0);
@@ -780,6 +858,7 @@ function formatMyCredit(row, lang) {
 		`👤 <b>${name}</b>${xHandle ? `   𝕏<b>${xHandle}</b>` : ""}`,
 		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
 		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
+		`✅${t(lang, "checkin_credit")} <b>${checkinCredit}</b>`,
 		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	].join("\n");
@@ -822,6 +901,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	const video = Number(creditRow?.video_count || 0);
 	const listStarEventCnt = Number(creditRow?.list_star_event_cnt || 0);
 	const superCredit = Number(creditRow?.super_credit || 0);
+	const checkinCredit = Number(creditRow?.checkin_credit || 0);
 	const rank = Number(creditRow?.rank_value || 0);
 	const totalRows = Number(creditRow?.total_rows || 0);
 	const total = Number(creditRow?.star || 0);
@@ -841,6 +921,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		"━━━━━━━━━━━━",
 		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
 		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
+		`✅${t(lang, "checkin_credit")} <b>${checkinCredit}</b>`,
 		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
 		"━━━━━━━━━━━━",
 	]
@@ -857,7 +938,10 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(tg_photo_cnt, 0) * 2) + " +
 	"(COALESCE(tg_video_cnt, 0) * 10) + " +
 	"COALESCE(list_star_event_cnt, 0) + " +
-	"COALESCE(super_credit, 0)";
+	"COALESCE(super_credit, 0) + " +
+	"COALESCE(checkin_credit, 0)";
+
+const DAILY_CHECKIN_REWARD = 50;
 
 async function sendAskXHandleForProfile(env, chatId, lang) {
 	return tg(env, "sendMessage", {
@@ -956,6 +1040,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 			"COALESCE(tg_video_cnt, 0) AS video_count, " +
 			"COALESCE(list_star_event_cnt, 0) AS list_star_event_cnt, " +
 			"COALESCE(super_credit, 0) AS super_credit, " +
+			"COALESCE(checkin_credit, 0) AS checkin_credit, " +
 			'COALESCE("rank", 0) AS rank_value, ' +
 			`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
 			`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
@@ -976,6 +1061,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 				"COALESCE(tg_video_cnt, 0) AS video_count, " +
 				"COALESCE(list_star_event_cnt, 0) AS list_star_event_cnt, " +
 				"COALESCE(super_credit, 0) AS super_credit, " +
+				"COALESCE(checkin_credit, 0) AS checkin_credit, " +
 				'COALESCE("rank", 0) AS rank_value, ' +
 				`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
 				`${TOTAL_CREDIT_SQL_EXPR} AS star ` +
@@ -997,6 +1083,115 @@ async function sendMyCredit(env, chatId, userId, telegramUsername, lang) {
 		chat_id: chatId,
 		text: formatMyCredit(row, lang),
 		parse_mode: "HTML",
+	});
+}
+
+function getAllKnownChatIds(env) {
+	const all = new Set();
+	const values = [
+		env.LANG_GROUPS_ZH_HANS,
+		env.LANG_GROUPS_ZH_HANT,
+		env.LANG_GROUPS_JA,
+		env.LANG_GROUPS_KO,
+		env.LANG_GROUPS_ES,
+		env.LANG_GROUPS_EN,
+	];
+	for (const raw of values) {
+		const ids = parseGroupIds(raw);
+		for (const id of ids) {
+			all.add(id);
+		}
+	}
+	return Array.from(all);
+}
+
+async function sendDailyCheckinMessageToAllChats(env) {
+	const chatIds = getAllKnownChatIds(env);
+	for (const chatId of chatIds) {
+		const lang = getChatLang(env, chatId, "en");
+		try {
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: t(lang, "checkin_broadcast_text"),
+				reply_markup: {
+					inline_keyboard: [[{ text: t(lang, "checkin_button"), callback_data: "checkin:claim" }]],
+				},
+			});
+		} catch (err) {
+			console.error(`sendDailyCheckinMessage failed for chat ${chatId}:`, err);
+		}
+	}
+}
+
+async function claimDailyCheckin(env, callbackQuery, lang) {
+	const callbackQueryId = callbackQuery?.id;
+	const tgUsername = normalizeInput(callbackQuery?.from?.username).toLowerCase();
+	if (!tgUsername) {
+		await tg(env, "answerCallbackQuery", {
+			callback_query_id: callbackQueryId,
+			text: t(lang, "checkin_need_tg_username"),
+			show_alert: true,
+		});
+		return;
+	}
+
+	const table = getProfilesTable(env);
+	const matchedRows = await env.DB.prepare(
+		`SELECT rowid, COALESCE(checked_in_today, 0) AS checked_in_today ` +
+		`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 2`
+	)
+		.bind(tgUsername)
+		.all();
+	const profiles = Array.isArray(matchedRows?.results) ? matchedRows.results : [];
+	if (profiles.length === 0) {
+		await tg(env, "answerCallbackQuery", {
+			callback_query_id: callbackQueryId,
+			text: t(lang, "checkin_profile_not_found"),
+			show_alert: true,
+		});
+		return;
+	}
+	if (profiles.length > 1) {
+		await tg(env, "answerCallbackQuery", {
+			callback_query_id: callbackQueryId,
+			text: t(lang, "checkin_multiple_profiles_tg"),
+			show_alert: true,
+		});
+		return;
+	}
+
+	const targetRow = profiles[0];
+	const checkedIn = Number(targetRow?.checked_in_today || 0) === 1;
+	if (checkedIn) {
+		await tg(env, "answerCallbackQuery", {
+			callback_query_id: callbackQueryId,
+			text: t(lang, "checkin_already_done_today"),
+			show_alert: true,
+		});
+		return;
+	}
+
+	const claimSql =
+		`UPDATE ${table} SET ` +
+		`checkin_credit = COALESCE(checkin_credit, 0) + ${DAILY_CHECKIN_REWARD}, ` +
+		"checked_in_today = 1, " +
+		`total_credit = (${TOTAL_CREDIT_SQL_EXPR}) + ${DAILY_CHECKIN_REWARD} ` +
+		"WHERE rowid = ? AND COALESCE(checked_in_today, 0) = 0";
+	const claimRes = await env.DB.prepare(claimSql).bind(targetRow.rowid).run();
+	const changed = Number(claimRes?.meta?.changes || 0);
+	if (changed > 0) {
+		await tg(env, "answerCallbackQuery", {
+			callback_query_id: callbackQueryId,
+			text: t(lang, "checkin_success"),
+			show_alert: true,
+		});
+		return;
+	}
+
+	await tg(env, "answerCallbackQuery", {
+		callback_query_id: callbackQueryId,
+		text: t(lang, "checkin_failed"),
+		show_alert: true,
 	});
 }
 
@@ -1135,6 +1330,20 @@ async function handleCallback(env, callbackQuery) {
 		return;
 	}
 
+	if (data === "checkin:claim") {
+		try {
+			await claimDailyCheckin(env, callbackQuery, lang);
+		} catch (err) {
+			console.error("claimDailyCheckin failed:", err);
+			await tg(env, "answerCallbackQuery", {
+				callback_query_id: callbackQuery.id,
+				text: t(lang, "checkin_failed"),
+				show_alert: true,
+			});
+		}
+		return;
+	}
+
 	if (data.startsWith("credit_page:")) {
 		const rawPage = Number(data.split(":")[1]);
 		const targetPage = Number.isFinite(rawPage) ? rawPage : 0;
@@ -1264,13 +1473,13 @@ async function handleMessage(env, message, ctx) {
 			const changed = await updateRankByTotalCredit(env);
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: `Update completed. Total credit recalculated: ${recalculated}; rank updated: ${changed}`,
+				text: t(lang, "updaterank_success", { recalculated, changed }),
 			});
 		} catch (err) {
 			console.error("updateRankByTotalCredit failed:", err);
 			await tg(env, "sendMessage", {
 				chat_id: chatId,
-				text: "Rank update failed. Please try again later.",
+				text: t(lang, "updaterank_failed"),
 			});
 		}
 		return;
@@ -1371,5 +1580,20 @@ export default {
 		}
 
 		return new Response("ok", { status: 200 });
+	},
+	async scheduled(_controller, env, ctx) {
+		try {
+			getBotToken(env);
+			if (!env.DB) {
+				throw new Error("Missing D1 binding: DB");
+			}
+			getProfilesTable(env);
+			await env.DB.prepare("SELECT 1").first();
+			await ensureProfilesSchema(env);
+		} catch (err) {
+			console.error("Scheduled config check failed:", err);
+			return;
+		}
+		ctx.waitUntil(sendDailyCheckinMessageToAllChats(env));
 	},
 };

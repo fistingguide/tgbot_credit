@@ -222,12 +222,12 @@ const I18N = {
 		es: "Ya hiciste check-in hoy.",
 	},
 	checkin_profile_not_found: {
-		en: "No matching profile found for your Telegram username.",
-		"zh-Hans": "未找到与你Telegram用户名匹配的档案。",
-		"zh-Hant": "未找到與你Telegram用戶名匹配的檔案。",
-		ja: "あなたのTelegramユーザー名に一致するプロフィールが見つかりません。",
-		ko: "회원님의 Telegram 사용자명과 일치하는 프로필을 찾을 수 없습니다.",
-		es: "No se encontró un perfil coincidente con tu usuario de Telegram.",
+		en: "Your Telegram username is not stored yet. Please add it at https://fisting.guide/admin.",
+		"zh-Hans": "你还没有存储tg用户名，请进入 https://fisting.guide/admin 进行添加。",
+		"zh-Hant": "你還沒有儲存tg用戶名，請進入 https://fisting.guide/admin 進行添加。",
+		ja: "あなたのTelegramユーザー名はまだ保存されていません。https://fisting.guide/admin で追加してください。",
+		ko: "Telegram 사용자명이 아직 저장되어 있지 않습니다. https://fisting.guide/admin 에서 추가하세요.",
+		es: "Tu nombre de usuario de Telegram aún no está guardado. Agrégalo en https://fisting.guide/admin.",
 	},
 	checkin_multiple_profiles_tg: {
 		en: "Multiple profiles found for your Telegram username. Please contact admin.",
@@ -244,6 +244,14 @@ const I18N = {
 		ja: "チェックイン成功。+50クレジット。",
 		ko: "출석 체크 성공, +50 크레딧.",
 		es: "Check-in exitoso. +50 créditos.",
+	},
+	checkin_success_announce: {
+		en: "{user} checked in successfully. +50 credits.",
+		"zh-Hans": "{user} 签到成功，+50积分。",
+		"zh-Hant": "{user} 簽到成功，+50積分。",
+		ja: "{user} がチェックインしました。+50クレジット。",
+		ko: "{user} 님이 출석 체크했습니다. +50 크레딧.",
+		es: "{user} hizo check-in con éxito. +50 créditos.",
 	},
 	checkin_failed: {
 		en: "Check-in failed. Please try again later.",
@@ -1143,8 +1151,8 @@ async function claimDailyCheckinForUser(env, from) {
 
 	const table = getProfilesTable(env);
 	const matchedRows = await env.DB.prepare(
-		`SELECT rowid, COALESCE(checked_in_today, 0) AS checked_in_today ` +
-		`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 2`
+		`SELECT COALESCE(checked_in_today, 0) AS checked_in_today ` +
+			`FROM ${table} WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? LIMIT 2`
 	)
 		.bind(tgUsername)
 		.all();
@@ -1156,8 +1164,7 @@ async function claimDailyCheckinForUser(env, from) {
 		return "checkin_multiple_profiles_tg";
 	}
 
-	const targetRow = profiles[0];
-	const checkedIn = Number(targetRow?.checked_in_today || 0) === 1;
+	const checkedIn = Number(profiles[0]?.checked_in_today || 0) === 1;
 	if (checkedIn) {
 		return "checkin_already_done_today";
 	}
@@ -1167,8 +1174,8 @@ async function claimDailyCheckinForUser(env, from) {
 		`checkin_credit = COALESCE(checkin_credit, 0) + ${DAILY_CHECKIN_REWARD}, ` +
 		"checked_in_today = 1, " +
 		`total_credit = (${TOTAL_CREDIT_SQL_EXPR}) + ${DAILY_CHECKIN_REWARD} ` +
-		"WHERE rowid = ? AND COALESCE(checked_in_today, 0) = 0";
-	const claimRes = await env.DB.prepare(claimSql).bind(targetRow.rowid).run();
+		"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ? AND COALESCE(checked_in_today, 0) = 0";
+	const claimRes = await env.DB.prepare(claimSql).bind(tgUsername).run();
 	const changed = Number(claimRes?.meta?.changes || 0);
 	if (changed > 0) {
 		return "checkin_success";
@@ -1185,6 +1192,19 @@ async function claimDailyCheckin(env, callbackQuery, lang) {
 		text: t(lang, resultKey),
 		show_alert: true,
 	});
+	if (resultKey === "checkin_success") {
+		const chatId = callbackQuery?.message?.chat?.id;
+		if (chatId) {
+			const rawName = normalizeInput(callbackQuery?.from?.username)
+				? `@${normalizeInput(callbackQuery?.from?.username)}`
+				: String(callbackQuery?.from?.first_name || callbackQuery?.from?.id || "User");
+			await tg(env, "sendMessage", {
+				chat_id: chatId,
+				text: t(lang, "checkin_success_announce", { user: escapeHtml(rawName) }),
+				parse_mode: "HTML",
+			});
+		}
+	}
 }
 
 async function queryProfilesByX(env, input) {

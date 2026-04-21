@@ -211,6 +211,7 @@ const I18N = {
 	credit_title: { en: "<b>⭐FistingGuide Credit</b>", "zh-Hans": "<b>⭐FistingGuide Credit</b>", "zh-Hant": "<b>⭐FistingGuide Credit</b>", ja: "<b>⭐FistingGuide Credit</b>", ko: "<b>⭐FistingGuide Credit</b>", es: "<b>⭐FistingGuide Credit</b>" },
 	liststar_event_credit: { en: "ListStar Event Credit", "zh-Hans": "ListStar活动积分", "zh-Hant": "ListStar活動積分", ja: "ListStarイベントクレジット", ko: "ListStar 이벤트 크레딧", es: "Crédito de evento ListStar" },
 	super_credit: { en: "Super Credit", "zh-Hans": "超级积分", "zh-Hant": "超級積分", ja: "スーパークレジット", ko: "슈퍼 크레딧", es: "Súper crédito" },
+	author_credits: { en: "Author Credit", "zh-Hans": "作者积分", "zh-Hant": "作者積分", ja: "作者クレジット", ko: "작성자 크레딧", es: "Crédito de autor" },
 	current_rank: { en: "Current Rank", "zh-Hans": "当前排名", "zh-Hant": "當前排名", ja: "現在の順位", ko: "현재 순위", es: "Rango actual" },
 	total_credit: { en: "Total Credit", "zh-Hans": "总积分", "zh-Hant": "總積分", ja: "総クレジット", ko: "총 크레딧", es: "Crédito total" },
 	credit_gap_to_prev: {
@@ -711,7 +712,8 @@ async function upsertCredit(env, message) {
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
 			"COALESCE(list_star_event_cnt, 0) + " +
 			"COALESCE(super_credit, 0) + " +
-			"COALESCE(checkin_credit, 0) " +
+			"COALESCE(checkin_credit, 0) + " +
+			"COALESCE(author_credits, 0) " +
 			"WHERE TRIM(COALESCE(tg_user_id, '')) = ?"
 	)
 		.bind(telegram, telegram, tgUserId, msgCount, photoCount, videoCount, msgCount, photoCount, videoCount, tgUserId)
@@ -739,7 +741,8 @@ async function upsertCredit(env, message) {
 			"((COALESCE(tg_video_cnt, 0) + ?) * 10) + " +
 			"COALESCE(list_star_event_cnt, 0) + " +
 			"COALESCE(super_credit, 0) + " +
-			"COALESCE(checkin_credit, 0) " +
+			"COALESCE(checkin_credit, 0) + " +
+			"COALESCE(author_credits, 0) " +
 			"WHERE LOWER(TRIM(REPLACE(COALESCE(telegram, ''), '@', ''))) = ?"
 	)
 		.bind(tgUserId, msgCount, photoCount, videoCount, msgCount, photoCount, videoCount, telegram)
@@ -887,7 +890,8 @@ async function recalculateAllTotalCredit(env) {
 		"(COALESCE(tg_video_cnt, 0) * 10) + " +
 		"COALESCE(list_star_event_cnt, 0) + " +
 		"COALESCE(super_credit, 0) + " +
-		"COALESCE(checkin_credit, 0)";
+		"COALESCE(checkin_credit, 0) + " +
+		"COALESCE(author_credits, 0)";
 	const res = await env.DB.prepare(sql).run();
 	return Number(res?.meta?.changes || 0);
 }
@@ -905,6 +909,7 @@ function formatMyCredit(row, lang) {
 	const listStarEventCnt = Number(row?.list_star_event_cnt || 0);
 	const superCredit = Number(row?.super_credit || 0);
 	const checkinCredit = Number(row?.checkin_credit || 0);
+	const authorCredits = Number(row?.author_credits || 0);
 	const rank = Number(row?.rank_value || 0);
 	const totalRows = Number(row?.total_rows || 0);
 	const total = Number(row?.star || 0);
@@ -920,6 +925,7 @@ function formatMyCredit(row, lang) {
 		`🐦<b>${followersCount}</b> 💬<b>${msg}</b> 🖼️<b>${photo}</b> 🎬<b>${video}</b>`,
 		`🎯${t(lang, "liststar_event_credit")} <b>${listStarEventCnt}</b> ⚡${t(lang, "super_credit")} <b>${superCredit}</b>`,
 		`✅${t(lang, "checkin_credit")} <b>${checkinCredit}</b>`,
+		`✍️${t(lang, "author_credits")} <b>${authorCredits}</b>`,
 		`🏆${t(lang, "current_rank")} <b>${rank}</b>/<b>${totalRows}</b>   ⭐${t(lang, "total_credit")} <b>${total}</b>`,
 		prevGapLine,
 		"━━━━━━━━━━━━",
@@ -966,6 +972,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 	const listStarEventCnt = Number(creditRow?.list_star_event_cnt || 0);
 	const superCredit = Number(creditRow?.super_credit || 0);
 	const checkinCredit = Number(creditRow?.checkin_credit || 0);
+	const authorCredits = Number(creditRow?.author_credits || 0);
 	const rank = Number(creditRow?.rank_value || 0);
 	const totalRows = Number(creditRow?.total_rows || 0);
 	const total = Number(creditRow?.star || 0);
@@ -991,6 +998,7 @@ function formatMeCombined(profileRow, creditRow, lang) {
 		`🎯 <b>${t(lang, "liststar_event_credit")}</b>: <b>${formatNumberDisplay(listStarEventCnt)}</b>`,
 		`⚡ <b>${t(lang, "super_credit")}</b>: <b>${formatNumberDisplay(superCredit)}</b>`,
 		`✅ <b>${t(lang, "checkin_credit")}</b>: <b>${formatNumberDisplay(checkinCredit)}</b>`,
+		`✍️ <b>${t(lang, "author_credits")}</b>: <b>${formatNumberDisplay(authorCredits)}</b>`,
 		"━━━━━━━━━━━━",
 		`💡 <b>${t(lang, "how_to_gain_credit")}</b>`,
 		`<tg-spoiler>${t(lang, "credit_guide_line")}</tg-spoiler>`,
@@ -1009,7 +1017,8 @@ const TOTAL_CREDIT_SQL_EXPR =
 	"(COALESCE(tg_video_cnt, 0) * 10) + " +
 	"COALESCE(list_star_event_cnt, 0) + " +
 	"COALESCE(super_credit, 0) + " +
-	"COALESCE(checkin_credit, 0)";
+	"COALESCE(checkin_credit, 0) + " +
+	"COALESCE(author_credits, 0)";
 
 const DAILY_CHECKIN_REWARD = 50;
 
@@ -1111,6 +1120,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 			"COALESCE(p.list_star_event_cnt, 0) AS list_star_event_cnt, " +
 			"COALESCE(p.super_credit, 0) AS super_credit, " +
 			"COALESCE(p.checkin_credit, 0) AS checkin_credit, " +
+			"COALESCE(p.author_credits, 0) AS author_credits, " +
 			'COALESCE(p."rank", 0) AS rank_value, ' +
 			`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
 			`${TOTAL_CREDIT_SQL_EXPR} AS star, ` +
@@ -1136,6 +1146,7 @@ async function queryMyCreditRow(env, userId, telegramUsername) {
 				"COALESCE(p.list_star_event_cnt, 0) AS list_star_event_cnt, " +
 				"COALESCE(p.super_credit, 0) AS super_credit, " +
 				"COALESCE(p.checkin_credit, 0) AS checkin_credit, " +
+				"COALESCE(p.author_credits, 0) AS author_credits, " +
 				'COALESCE(p."rank", 0) AS rank_value, ' +
 				`(SELECT COUNT(1) FROM ${table}) AS total_rows, ` +
 				`${TOTAL_CREDIT_SQL_EXPR} AS star, ` +
